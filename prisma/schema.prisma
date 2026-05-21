@@ -1,0 +1,233 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  BUYER
+  PUBLISHER
+  MANAGER
+  ADMIN
+}
+
+enum ListingType {
+  GUEST_POST
+  NICHE_EDIT
+  TIER2
+}
+
+enum OrderStatus {
+  PENDING
+  IN_PROGRESS
+  CONTENT_NEEDED
+  SUBMITTED
+  PUBLISHED
+  COMPLETED
+  CANCELLED
+  REJECTED
+}
+
+enum PublisherStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          Role      @default(BUYER)
+  credits       Float     @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  publisher     Publisher?
+  orders        Order[]
+  blacklist     Blacklist[]
+  transactions  Transaction[]
+}
+
+// ─── NextAuth Models ──────────────────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Publisher ────────────────────────────────────────────────────────────────
+
+model Publisher {
+  id        String          @id @default(cuid())
+  userId    String          @unique
+  status    PublisherStatus @default(PENDING)
+  bio       String?
+  website   String?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sites Site[]
+}
+
+// ─── Site ─────────────────────────────────────────────────────────────────────
+
+model Site {
+  id            String          @id @default(cuid())
+  publisherId   String
+  url           String          @unique
+  name          String
+  description   String?
+  language      String          @default("English")
+  country       String          @default("US")
+  niche         String
+  status        PublisherStatus @default(PENDING)
+  exampleUrl    String?         // example live link on this site
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  publisher Publisher    @relation(fields: [publisherId], references: [id], onDelete: Cascade)
+  metrics   SiteMetrics?
+  listings  Listing[]
+  blacklist Blacklist[]
+}
+
+// ─── SiteMetrics (manually updated by admin weekly) ───────────────────────────
+
+model SiteMetrics {
+  id                String   @id @default(cuid())
+  siteId            String   @unique
+  domainRating      Float    @default(0)   // Ahrefs DR
+  domainAuthority   Float    @default(0)   // Moz DA
+  organicTraffic    Int      @default(0)   // monthly organic visits
+  referringDomains  Int      @default(0)
+  spamScore         Float    @default(0)   // Moz spam score (0-17)
+  updatedAt         DateTime @default(now())
+  updatedById       String?  // admin who last updated
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+}
+
+// ─── Listing ──────────────────────────────────────────────────────────────────
+
+model Listing {
+  id              String      @id @default(cuid())
+  siteId          String
+  type            ListingType
+  price           Float
+  turnaroundDays  Int         @default(3)
+  isActive        Boolean     @default(true)
+  wordCount       Int?        // for guest posts
+  doFollow        Boolean     @default(true)
+  includesContent Boolean     @default(false) // does price include article writing?
+  extraNotes      String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  site   Site    @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  orders Order[]
+}
+
+// ─── Order ────────────────────────────────────────────────────────────────────
+
+model Order {
+  id           String      @id @default(cuid())
+  buyerId      String
+  listingId    String
+  status       OrderStatus @default(PENDING)
+  anchorText   String?
+  targetUrl    String?     // buyer's URL to link to
+  articleUrl   String?     // live published URL (filled by publisher)
+  notes        String?
+  contentBody  String?     // article content (if buyer provides it)
+  price        Float
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  buyer       User        @relation(fields: [buyerId], references: [id])
+  listing     Listing     @relation(fields: [listingId], references: [id])
+  transaction Transaction?
+}
+
+// ─── Transaction ──────────────────────────────────────────────────────────────
+
+model Transaction {
+  id              String        @id @default(cuid())
+  userId          String
+  orderId         String?       @unique
+  amount          Float
+  currency        String        @default("USD")
+  paymentStatus   PaymentStatus @default(PENDING)
+  stripePaymentId String?
+  description     String?
+  createdAt       DateTime      @default(now())
+
+  user  User   @relation(fields: [userId], references: [id])
+  order Order? @relation(fields: [orderId], references: [id])
+}
+
+// ─── Blacklist ────────────────────────────────────────────────────────────────
+
+model Blacklist {
+  id        String   @id @default(cuid())
+  userId    String
+  siteId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, siteId])
+}
