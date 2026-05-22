@@ -59,13 +59,18 @@ export default function AdminMetricsPage() {
     s.niche?.toLowerCase().includes(search.toLowerCase())
   );
 
-  if (loading) return <div className="max-w-6xl mx-auto px-4 py-10 animate-pulse h-96 bg-white rounded-xl" />;
+  if (loading) return (
+    <div className="min-h-screen bg-zinc-950">
+      <div className="max-w-6xl mx-auto px-4 py-10 animate-pulse h-96 bg-zinc-900 border border-zinc-800 rounded-2xl" />
+    </div>
+  );
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-zinc-950">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Update Site Metrics</h1>
-        <p className="text-gray-500 text-sm mt-1">
+        <h1 className="text-2xl font-bold text-white">Update Site Metrics</h1>
+        <p className="text-zinc-400 text-sm mt-1">
           Update DR, DA, traffic, and referring domains weekly. Total sites: {sites.length}
         </p>
       </div>
@@ -76,17 +81,17 @@ export default function AdminMetricsPage() {
           placeholder="Search by domain or niche..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-sm rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full max-w-sm rounded-xl bg-zinc-800/60 border border-zinc-700 px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 focus:bg-zinc-800 transition-all duration-200"
         />
       </div>
 
       <div className="space-y-3">
         {filtered.map((site) => (
-          <div key={site.id} className="bg-white border border-gray-200 rounded-xl p-4">
+          <div key={site.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 hover:border-zinc-700 transition-colors">
             <div className="flex items-center gap-3 mb-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-gray-900 text-sm">{getDomainFromUrl(site.url)}</span>
+                  <span className="font-semibold text-white text-sm">{getDomainFromUrl(site.url)}</span>
                   <Badge
                     variant={
                       site.status === "APPROVED" ? "success" :
@@ -96,7 +101,7 @@ export default function AdminMetricsPage() {
                     {site.status}
                   </Badge>
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-xs text-zinc-500 mt-0.5">
                   {site.niche} · {site.language} ·{" "}
                   {site.metrics?.updatedAt
                     ? `Last updated: ${formatDate(site.metrics.updatedAt)}`
@@ -126,12 +131,12 @@ export default function AdminMetricsPage() {
                 { key: "spamScore", label: "Spam Score (0-17)" },
               ].map((field) => (
                 <div key={field.key}>
-                  <label className="block text-xs text-gray-500 mb-1">{field.label}</label>
+                  <label className="block text-xs text-zinc-500 mb-1">{field.label}</label>
                   <input
                     type="number"
                     value={metrics[site.id]?.[field.key] ?? 0}
                     onChange={(e) => updateMetric(site.id, field.key, e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full rounded-lg bg-zinc-800/60 border border-zinc-700 px-2.5 py-1.5 text-sm text-zinc-100 hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 focus:bg-zinc-800 transition-all duration-200"
                   />
                 </div>
               ))}
@@ -139,6 +144,7 @@ export default function AdminMetricsPage() {
           </div>
         ))}
       </div>
+    </div>
     </div>
   );
 }

@@ -43,59 +43,65 @@ export default function OrdersPage() {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto px-4 py-10 space-y-4">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-20 bg-white rounded-xl border border-gray-200 animate-pulse" />
-        ))}
+      <div className="min-h-screen bg-zinc-950">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-20 bg-zinc-900 rounded-2xl border border-zinc-800 animate-pulse" />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">My Orders</h1>
+    <div className="min-h-screen bg-zinc-950">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+        <h1 className="text-2xl font-bold text-white mb-6">My Orders</h1>
 
-      {orders.length === 0 ? (
-        <div className="text-center py-20 text-gray-500">
-          <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-          <p className="font-medium">No orders yet</p>
-          <p className="text-sm mt-1">
-            <Link href="/marketplace" className="text-indigo-600 hover:underline">
-              Browse the marketplace
-            </Link>{" "}
-            to place your first order.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {orders.map((order) => (
-            <Link key={order.id} href={`/orders/${order.id}`}>
-              <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-4 hover:shadow-sm transition-shadow">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Badge variant={statusVariant[order.status] ?? "default"}>
-                      {statusLabel[order.status] ?? order.status}
-                    </Badge>
-                    <span className="text-xs text-gray-400">{formatDate(order.createdAt)}</span>
+        {orders.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="h-16 w-16 rounded-2xl bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+              <ShoppingCart className="h-8 w-8 text-zinc-600" />
+            </div>
+            <p className="font-semibold text-white">No orders yet</p>
+            <p className="text-sm mt-1 text-zinc-500">
+              <Link href="/marketplace" className="text-indigo-400 hover:text-indigo-300 transition-colors">
+                Browse the marketplace
+              </Link>{" "}
+              to place your first order.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {orders.map((order) => (
+              <Link key={order.id} href={`/orders/${order.id}`}>
+                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex items-center gap-4 hover:border-indigo-500/30 hover:bg-zinc-900/80 transition-all duration-200 lift">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant={statusVariant[order.status] ?? "default"}>
+                        {statusLabel[order.status] ?? order.status}
+                      </Badge>
+                      <span className="text-xs text-zinc-500">{formatDate(order.createdAt)}</span>
+                    </div>
+                    <p className="font-semibold text-white text-sm truncate">
+                      {getDomainFromUrl(order.listing?.site?.url ?? "")}
+                    </p>
+                    <p className="text-xs text-zinc-500 truncate">
+                      {order.listing?.type?.replace("_", " ")} · {order.anchorText}
+                    </p>
                   </div>
-                  <p className="font-medium text-gray-900 text-sm truncate">
-                    {getDomainFromUrl(order.listing?.site?.url ?? "")}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">
-                    {order.listing?.type?.replace("_", " ")} · {order.anchorText}
-                  </p>
+                  <div className="text-right shrink-0">
+                    <p className="font-bold text-white">{formatCurrency(order.price)}</p>
+                    {order.articleUrl && (
+                      <span className="text-xs text-emerald-400">Live ✓</span>
+                    )}
+                  </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="font-semibold text-gray-900">{formatCurrency(order.price)}</p>
-                  {order.articleUrl && (
-                    <span className="text-xs text-green-600">Live ✓</span>
-                  )}
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -59,16 +59,19 @@ export function OrderForm({ listing }: OrderFormProps) {
     router.push(`/orders/${data.id}?success=true`);
   }
 
+  const textareaClass =
+    "w-full rounded-xl bg-zinc-800/60 border border-zinc-700 px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 focus:bg-zinc-800 transition-all duration-200";
+
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+    <div className="bg-zinc-900 rounded-2xl border border-zinc-800 shadow-2xl shadow-black/40 p-6">
       <div className="flex items-center justify-between mb-1">
-        <h2 className="font-bold text-gray-900 text-lg">Place Order</h2>
-        <span className="text-2xl font-bold text-indigo-600">{formatCurrency(listing.price)}</span>
+        <h2 className="font-bold text-white text-lg">Place Order</h2>
+        <span className="text-2xl font-bold gradient-text">{formatCurrency(listing.price)}</span>
       </div>
-      <p className="text-xs text-gray-400 mb-6">One-time payment · No subscription</p>
+      <p className="text-xs text-zinc-500 mb-6">One-time payment · No subscription</p>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">
+        <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl px-4 py-3 mb-4">
           {error}
         </div>
       )}
@@ -92,11 +95,11 @@ export function OrderForm({ listing }: OrderFormProps) {
 
         {!listing.includesContent && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Article content <span className="text-gray-400 font-normal">(optional — we&apos;ll write it if empty)</span>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wide">
+              Article content <span className="text-zinc-500 font-normal normal-case tracking-normal">(optional — we&apos;ll write it if empty)</span>
             </label>
             <textarea
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[100px]"
+              className={`${textareaClass} min-h-[100px]`}
               placeholder="Paste your article here, or leave blank and we'll write it for you..."
               value={contentBody}
               onChange={(e) => setContentBody(e.target.value)}
@@ -105,11 +108,11 @@ export function OrderForm({ listing }: OrderFormProps) {
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Notes <span className="text-gray-400 font-normal">(optional)</span>
+          <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wide">
+            Notes <span className="text-zinc-500 font-normal normal-case tracking-normal">(optional)</span>
           </label>
           <textarea
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className={textareaClass}
             rows={2}
             placeholder="Any specific instructions for the publisher..."
             value={notes}
@@ -122,13 +125,13 @@ export function OrderForm({ listing }: OrderFormProps) {
         </Button>
       </form>
 
-      <div className="mt-4 space-y-2 text-xs text-gray-500">
+      <div className="mt-5 pt-4 border-t border-zinc-800 space-y-2 text-xs text-zinc-400">
         <div className="flex items-center gap-1.5">
-          <Clock className="h-3.5 w-3.5 text-gray-400" />
+          <Clock className="h-3.5 w-3.5 text-indigo-400" />
           Delivered within {listing.turnaroundDays} business days
         </div>
         <div className="flex items-center gap-1.5">
-          <Shield className="h-3.5 w-3.5 text-gray-400" />
+          <Shield className="h-3.5 w-3.5 text-emerald-400" />
           12-month link replacement guarantee
         </div>
       </div>

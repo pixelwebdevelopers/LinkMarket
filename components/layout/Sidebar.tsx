@@ -10,11 +10,8 @@ import {
   Globe,
   BarChart2,
   Shield,
-  Users,
-  Settings,
   PlusCircle,
   List,
-  CheckSquare,
 } from "lucide-react";
 
 interface NavItem {
@@ -30,11 +27,8 @@ const navItems: NavItem[] = [
   { href: "/orders", label: "My Orders", icon: ShoppingCart, roles: ["BUYER", "ADMIN"] },
   { href: "/publisher", label: "My Sites", icon: List, roles: ["PUBLISHER", "ADMIN"] },
   { href: "/publisher/new", label: "Add Site", icon: PlusCircle, roles: ["PUBLISHER", "ADMIN"] },
-  { href: "/admin", label: "Admin Panel", icon: Shield, roles: ["ADMIN"] },
-  { href: "/admin/publishers", label: "Publishers", icon: Users, roles: ["ADMIN"] },
-  { href: "/admin/metrics", label: "Update Metrics", icon: BarChart2, roles: ["ADMIN"] },
-  { href: "/admin/orders", label: "All Orders", icon: CheckSquare, roles: ["ADMIN"] },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/admin", label: "Admin Panel", icon: Shield, roles: ["ADMIN", "MANAGER"] },
+  { href: "/admin/metrics", label: "Update Metrics", icon: BarChart2, roles: ["ADMIN", "MANAGER"] },
 ];
 
 export function Sidebar() {
@@ -47,7 +41,7 @@ export function Sidebar() {
   );
 
   return (
-    <aside className="w-60 shrink-0 hidden lg:flex flex-col bg-white border-r border-gray-200 min-h-screen pt-6">
+    <aside className="w-60 shrink-0 hidden lg:flex flex-col bg-zinc-950 border-r border-zinc-800 min-h-screen pt-6">
       <nav className="flex flex-col gap-1 px-3">
         {filtered.map((item) => {
           const Icon = item.icon;
@@ -59,8 +53,8 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                 active
-                  ? "bg-indigo-50 text-indigo-700"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
+                  : "text-zinc-400 hover:bg-zinc-800/60 hover:text-white"
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />

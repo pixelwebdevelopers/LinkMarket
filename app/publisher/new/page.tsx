@@ -81,22 +81,23 @@ export default function NewSitePage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Submit Your Site</h1>
-      <p className="text-gray-500 text-sm mb-8">
+    <div className="min-h-screen bg-zinc-950">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-fade-in">
+      <h1 className="text-2xl font-bold text-white mb-2">Submit Your Site</h1>
+      <p className="text-zinc-400 text-sm mb-8">
         Our team will review your site and approve it within 48 hours. You&apos;ll be notified by email.
       </p>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-6">
+        <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl px-4 py-3 mb-6">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Site Info */}
-        <section className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
-          <h2 className="font-semibold text-gray-900">Site Information</h2>
+        <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
+          <h2 className="font-semibold text-white">Site Information</h2>
           <div className="grid sm:grid-cols-2 gap-4">
             <Input
               label="Site URL"
@@ -140,11 +141,11 @@ export default function NewSitePage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Site Description <span className="text-gray-400 font-normal">(optional)</span>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wide">
+              Site Description <span className="text-zinc-500 font-normal normal-case tracking-normal">(optional)</span>
             </label>
             <textarea
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-xl bg-zinc-800/60 border border-zinc-700 px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 focus:bg-zinc-800 transition-all duration-200"
               rows={3}
               placeholder="Briefly describe your site, audience, and content type..."
               value={site.description}
@@ -156,18 +157,18 @@ export default function NewSitePage() {
         {/* Listings */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900">Link Packages</h2>
+            <h2 className="font-semibold text-white">Link Packages</h2>
             <Button type="button" variant="outline" size="sm" onClick={addListing}>
               <PlusCircle className="h-4 w-4" /> Add Package
             </Button>
           </div>
 
           {listings.map((listing, i) => (
-            <div key={i} className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
+            <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4 animate-fade-in">
               <div className="flex items-center justify-between">
-                <h3 className="font-medium text-gray-700">Package {i + 1}</h3>
+                <h3 className="font-medium text-zinc-300">Package {i + 1}</h3>
                 {listings.length > 1 && (
-                  <button type="button" onClick={() => removeListing(i)} className="text-red-400 hover:text-red-600">
+                  <button type="button" onClick={() => removeListing(i)} className="text-zinc-500 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-500/10">
                     <Trash2 className="h-4 w-4" />
                   </button>
                 )}
@@ -216,13 +217,13 @@ export default function NewSitePage() {
                   onChange={(e) => updateListing(i, "extraNotes", e.target.value)}
                 />
               </div>
-              <div className="flex gap-6 text-sm">
+              <div className="flex gap-6 text-sm text-zinc-300">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={listing.doFollow}
                     onChange={(e) => updateListing(i, "doFollow", e.target.checked)}
-                    className="rounded text-indigo-600"
+                    className="h-4 w-4 rounded border-zinc-600 bg-zinc-800 text-indigo-500 accent-indigo-500 focus:ring-indigo-500/50 cursor-pointer"
                   />
                   DoFollow link
                 </label>
@@ -231,7 +232,7 @@ export default function NewSitePage() {
                     type="checkbox"
                     checked={listing.includesContent}
                     onChange={(e) => updateListing(i, "includesContent", e.target.checked)}
-                    className="rounded text-indigo-600"
+                    className="h-4 w-4 rounded border-zinc-600 bg-zinc-800 text-indigo-500 accent-indigo-500 focus:ring-indigo-500/50 cursor-pointer"
                   />
                   Content writing included
                 </label>
@@ -244,6 +245,7 @@ export default function NewSitePage() {
           Submit Site for Review
         </Button>
       </form>
+    </div>
     </div>
   );
 }

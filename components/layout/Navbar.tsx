@@ -1,27 +1,30 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard, ShoppingCart, Globe, Settings, LogOut,
-  ChevronDown, Menu, X, Zap, Shield, Users, BarChart2,
+  LayoutDashboard, ShoppingCart, Globe, LogOut,
+  ChevronDown, Menu, X, Zap, Shield, BarChart2, Sparkles, LogIn,
 } from "lucide-react";
 
 export function Navbar() {
   const { data: session } = useSession();
+  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const role = session?.user?.role;
 
-  const roleColor: Record<string, string> = {
-    ADMIN: "text-red-400",
-    MANAGER: "text-indigo-400",
-    PUBLISHER: "text-emerald-400",
-    BUYER: "text-zinc-400",
-  };
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const roleBadge: Record<string, string> = {
     ADMIN: "bg-red-500/10 text-red-400 border border-red-500/20",
@@ -30,15 +33,42 @@ export function Navbar() {
     BUYER: "bg-zinc-800 text-zinc-400 border border-zinc-700",
   };
 
+  const navLinks = [
+    { href: "/marketplace", label: "Marketplace" },
+    ...(session ? [
+      { href: "/dashboard", label: "Dashboard" },
+      { href: "/orders", label: "Orders" },
+    ] : []),
+    ...(role === "PUBLISHER" ? [{ href: "/publisher", label: "My Sites" }] : []),
+    ...(role === "MANAGER" ? [{ href: "/admin", label: "Manager" }] : []),
+    ...(role === "ADMIN" ? [{ href: "/admin", label: "Admin" }] : []),
+  ];
+
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(href + "/");
+
   return (
-    <header className="sticky top-0 z-50 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-xl">
+    <header
+      className={cn(
+        "sticky top-0 z-50 transition-all duration-300",
+        scrolled
+          ? "border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-xl shadow-lg shadow-black/20"
+          : "border-b border-transparent bg-zinc-950/40 backdrop-blur-md"
+      )}
+    >
+      {/* gradient hairline */}
+      <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent" />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 group-hover:bg-indigo-500 transition-colors">
-              <Zap className="h-4 w-4 text-white" />
+          <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+            <div className="relative">
+              <div className="absolute inset-0 rounded-xl bg-indigo-500 blur-md opacity-50 group-hover:opacity-80 transition-opacity" />
+              <div className="relative h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
+                <Zap className="h-5 w-5 text-white" fill="currentColor" />
+              </div>
             </div>
             <span className="font-bold text-lg text-white tracking-tight">
               Link<span className="text-indigo-400">Market</span>
@@ -46,21 +76,16 @@ export function Navbar() {
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1">
-            {[
-              { href: "/marketplace", label: "Marketplace" },
-              ...(session ? [
-                { href: "/dashboard", label: "Dashboard" },
-                { href: "/orders", label: "Orders" },
-              ] : []),
-              ...(role === "PUBLISHER" ? [{ href: "/publisher", label: "My Sites" }] : []),
-              ...(role === "MANAGER" ? [{ href: "/admin", label: "Manager" }] : []),
-              ...(role === "ADMIN" ? [{ href: "/admin", label: "Admin" }] : []),
-            ].map((item) => (
+          <nav className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
+            {navLinks.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="px-3 py-2 text-sm font-medium text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800/60 transition-all duration-150"
+                data-active={isActive(item.href)}
+                className={cn(
+                  "nav-link px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-150",
+                  isActive(item.href) ? "text-white" : "text-zinc-400 hover:text-white"
+                )}
               >
                 {item.label}
               </Link>
@@ -68,14 +93,14 @@ export function Navbar() {
           </nav>
 
           {/* Right */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3 shrink-0">
             {session ? (
               <div className="relative">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 hover:border-zinc-700 transition-all duration-200"
+                  className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-xl border border-zinc-800 bg-zinc-900/80 hover:bg-zinc-800 hover:border-zinc-700 transition-all duration-200"
                 >
-                  <div className="h-6 w-6 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-xs">
+                  <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs">
                     {session.user?.name?.[0]?.toUpperCase() ?? session.user?.email?.[0]?.toUpperCase()}
                   </div>
                   <span className="text-sm font-medium text-zinc-300 hidden lg:block max-w-[120px] truncate">
@@ -86,13 +111,13 @@ export function Navbar() {
                       {role}
                     </span>
                   )}
-                  <ChevronDown className={cn("h-3.5 w-3.5 text-zinc-500 transition-transform", userMenuOpen && "rotate-180")} />
+                  <ChevronDown className={cn("h-3.5 w-3.5 text-zinc-500 transition-transform duration-200", userMenuOpen && "rotate-180")} />
                 </button>
 
                 {userMenuOpen && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
-                    <div className="absolute right-0 mt-2 w-60 bg-zinc-900 rounded-2xl shadow-2xl shadow-black/50 border border-zinc-800 py-1.5 z-50">
+                    <div className="absolute right-0 mt-2 w-60 bg-zinc-900/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/50 border border-zinc-800 py-1.5 z-50 origin-top-right animate-scale-in">
                       <div className="px-4 py-3 border-b border-zinc-800">
                         <p className="text-xs text-zinc-500 mb-0.5">Signed in as</p>
                         <p className="text-sm font-semibold text-white truncate">{session.user?.name}</p>
@@ -110,7 +135,6 @@ export function Navbar() {
                           { href: "/admin", label: "Admin Panel", icon: Shield },
                           { href: "/admin/metrics", label: "Update Metrics", icon: BarChart2 },
                         ] : []),
-                        { href: "/settings", label: "Settings", icon: Settings },
                       ].map((item) => {
                         const Icon = item.icon;
                         return (
@@ -142,7 +166,9 @@ export function Navbar() {
                   <Button variant="ghost" size="sm">Login</Button>
                 </Link>
                 <Link href="/register">
-                  <Button size="sm">Get Started</Button>
+                  <Button size="sm" className="shine">
+                    <Sparkles className="h-3.5 w-3.5" /> Get Started
+                  </Button>
                 </Link>
               </>
             )}
@@ -150,45 +176,69 @@ export function Navbar() {
 
           {/* Mobile toggle */}
           <button
-            className="md:hidden p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+            aria-label="Toggle menu"
+            className="md:hidden relative h-10 w-10 grid place-items-center rounded-xl text-zinc-300 hover:text-white hover:bg-zinc-800/60 transition-colors"
             onClick={() => setMenuOpen(!menuOpen)}
           >
-            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            <span className="sr-only">Menu</span>
+            <Menu className={cn("hamburger-line absolute h-5 w-5", menuOpen ? "opacity-0 rotate-90 scale-50" : "opacity-100")} />
+            <X className={cn("hamburger-line absolute h-5 w-5", menuOpen ? "opacity-100" : "opacity-0 -rotate-90 scale-50")} />
           </button>
         </div>
       </div>
 
       {/* Mobile menu */}
-      {menuOpen && (
-        <div className="md:hidden border-t border-zinc-800 bg-zinc-950 px-4 py-3 space-y-1">
-          {[
-            { href: "/marketplace", label: "Marketplace" },
-            ...(session ? [{ href: "/dashboard", label: "Dashboard" }, { href: "/orders", label: "Orders" }] : []),
-            ...(role === "PUBLISHER" ? [{ href: "/publisher", label: "My Sites" }] : []),
-            ...((role === "ADMIN" || role === "MANAGER") ? [{ href: "/admin", label: role === "ADMIN" ? "Admin" : "Manager" }] : []),
-          ].map((item) => (
-            <Link key={item.href} href={item.href}
-              className="block py-2.5 px-3 text-sm font-medium text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
+      <div
+        className={cn(
+          "md:hidden overflow-hidden border-t transition-all duration-300 ease-out bg-zinc-950/95 backdrop-blur-xl",
+          menuOpen ? "max-h-[80vh] border-zinc-800 opacity-100" : "max-h-0 border-transparent opacity-0"
+        )}
+      >
+        <div className="px-4 py-4 space-y-1">
+          {navLinks.map((item, i) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              style={{ transitionDelay: menuOpen ? `${i * 40}ms` : "0ms" }}
+              className={cn(
+                "flex items-center justify-between py-3 px-3 text-sm font-medium rounded-xl transition-all duration-300",
+                isActive(item.href)
+                  ? "bg-indigo-500/10 text-white border border-indigo-500/20"
+                  : "text-zinc-400 hover:text-white hover:bg-zinc-800/60",
+                menuOpen ? "translate-x-0 opacity-100" : "translate-x-3 opacity-0"
+              )}
               onClick={() => setMenuOpen(false)}
             >
               {item.label}
+              <ChevronDown className="h-4 w-4 -rotate-90 text-zinc-600" />
             </Link>
           ))}
-          {session ? (
-            <button
-              onClick={() => signOut()}
-              className="block w-full text-left py-2.5 px-3 text-sm font-medium text-red-400 rounded-lg hover:bg-red-500/10 transition-colors"
-            >
-              Sign out
-            </button>
-          ) : (
-            <>
-              <Link href="/login" className="block py-2.5 px-3 text-sm font-medium text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors" onClick={() => setMenuOpen(false)}>Login</Link>
-              <Link href="/register" className="block py-2.5 px-3 text-sm font-medium text-indigo-400 rounded-lg hover:bg-indigo-500/10 transition-colors" onClick={() => setMenuOpen(false)}>Get Started →</Link>
-            </>
-          )}
+
+          <div className="pt-3 mt-2 border-t border-zinc-800">
+            {session ? (
+              <button
+                onClick={() => signOut({ callbackUrl: "/" })}
+                className="flex items-center gap-2 w-full py-3 px-3 text-sm font-medium text-red-400 rounded-xl hover:bg-red-500/10 transition-colors"
+              >
+                <LogOut className="h-4 w-4" /> Sign out
+              </button>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <Link href="/login" onClick={() => setMenuOpen(false)}>
+                  <Button variant="outline" size="md" className="w-full">
+                    <LogIn className="h-4 w-4" /> Login
+                  </Button>
+                </Link>
+                <Link href="/register" onClick={() => setMenuOpen(false)}>
+                  <Button size="md" className="w-full">
+                    <Sparkles className="h-4 w-4" /> Get Started
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </header>
   );
 }
