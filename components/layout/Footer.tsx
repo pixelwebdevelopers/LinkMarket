@@ -81,7 +81,7 @@ export function Footer() {
   }
 
   return (
-    <footer className="relative border-t border-zinc-800 bg-zinc-950 overflow-hidden">
+    <footer className="relative border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 overflow-hidden">
       {/* gradient top accent */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/60 to-transparent" />
       {/* ambient glow */}
@@ -99,8 +99,8 @@ export function Footer() {
                   <Zap className="h-5 w-5 text-white" fill="currentColor" />
                 </div>
               </div>
-              <span className="font-bold text-lg text-white tracking-tight">
-                Link<span className="text-indigo-400">Market</span>
+              <span className="font-bold text-lg text-zinc-900 dark:text-white tracking-tight">
+                Link<span className="text-indigo-700 dark:text-indigo-400">Market</span>
               </span>
             </Link>
             <p className="text-sm text-zinc-500 mt-4 leading-relaxed max-w-xs">
@@ -117,7 +117,7 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="h-9 w-9 grid place-items-center rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:border-indigo-500/40 hover:bg-indigo-500/10 hover:-translate-y-0.5 transition-all duration-200"
+                  className="h-9 w-9 grid place-items-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:border-indigo-500/40 hover:bg-indigo-500/10 hover:-translate-y-0.5 transition-all duration-200"
                 >
                   <Icon className="h-4 w-4" />
                 </a>
@@ -128,13 +128,13 @@ export function Footer() {
           {/* Link columns */}
           {columns.map((col) => (
             <div key={col.title} className="md:col-span-2">
-              <h3 className="text-sm font-semibold text-white mb-4">{col.title}</h3>
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-white mb-4">{col.title}</h3>
               <ul className="space-y-2.5">
                 {col.links.map((link) => (
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="group inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-white transition-colors"
+                      className="group inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
                     >
                       {link.label}
                       <ArrowUpRight className="h-3 w-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200" />
@@ -147,7 +147,7 @@ export function Footer() {
 
           {/* Newsletter */}
           <div className="col-span-2">
-            <h3 className="text-sm font-semibold text-white mb-4">Stay in the loop</h3>
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white mb-4">Stay in the loop</h3>
             <p className="text-sm text-zinc-500 mb-3">Get new high-DR listings and SEO tips. No spam.</p>
             <form onSubmit={handleSubscribe} className="relative">
               <input
@@ -155,7 +155,7 @@ export function Footer() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full rounded-xl bg-zinc-900 border border-zinc-800 pl-3.5 pr-12 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 hover:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-200"
+                className="w-full rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 pl-3.5 pr-12 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 hover:border-zinc-300 dark:hover:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-200"
               />
               <button
                 type="submit"
@@ -166,29 +166,29 @@ export function Footer() {
               </button>
             </form>
             {subscribed && (
-              <p className="text-xs text-emerald-400 mt-2 animate-fade-in">Thanks — you&apos;re subscribed! 🎉</p>
+              <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-2 animate-fade-in">Thanks — you&apos;re subscribed! 🎉</p>
             )}
           </div>
         </div>
 
         {/* trust strip */}
-        <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 py-6 border-t border-zinc-800/80">
+        <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 py-6 border-t border-zinc-200/80 dark:border-zinc-800/80">
           {trustItems.map(({ icon: Icon, text }) => (
             <span key={text} className="flex items-center gap-2 text-xs text-zinc-500">
-              <Icon className="h-4 w-4 text-indigo-400" /> {text}
+              <Icon className="h-4 w-4 text-indigo-700 dark:text-indigo-400" /> {text}
             </span>
           ))}
         </div>
 
         {/* Bottom bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6 border-t border-zinc-800/80">
-          <p className="text-zinc-600 text-sm order-2 sm:order-1">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6 border-t border-zinc-200/80 dark:border-zinc-800/80">
+          <p className="text-zinc-400 dark:text-zinc-600 text-sm order-2 sm:order-1">
             © {new Date().getFullYear()} LinkMarket. All rights reserved.
           </p>
           <div className="flex items-center gap-6 text-sm text-zinc-500 order-1 sm:order-2">
-            <Link href="/#features" className="hover:text-white transition-colors">Privacy</Link>
-            <Link href="/#features" className="hover:text-white transition-colors">Terms</Link>
-            <Link href="/marketplace" className="hover:text-white transition-colors">Marketplace</Link>
+            <Link href="/#features" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Privacy</Link>
+            <Link href="/#features" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Terms</Link>
+            <Link href="/marketplace" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Marketplace</Link>
           </div>
         </div>
       </div>

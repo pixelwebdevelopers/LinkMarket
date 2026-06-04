@@ -60,18 +60,18 @@ export function OrderForm({ listing }: OrderFormProps) {
   }
 
   const textareaClass =
-    "w-full rounded-xl bg-zinc-800/60 border border-zinc-700 px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 focus:bg-zinc-800 transition-all duration-200";
+    "w-full rounded-xl bg-zinc-200/60 dark:bg-zinc-800/60 border border-zinc-300 dark:border-zinc-700 px-3.5 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 hover:border-zinc-400 dark:hover:border-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 focus:bg-zinc-200 dark:focus:bg-zinc-800 transition-all duration-200";
 
   return (
-    <div className="bg-zinc-900 rounded-2xl border border-zinc-800 shadow-2xl shadow-black/40 p-6">
+    <div className="bg-zinc-100 dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xl shadow-zinc-900/10 dark:shadow-black/40 p-6">
       <div className="flex items-center justify-between mb-1">
-        <h2 className="font-bold text-white text-lg">Place Order</h2>
+        <h2 className="font-bold text-zinc-900 dark:text-white text-lg">Place Order</h2>
         <span className="text-2xl font-bold gradient-text">{formatCurrency(listing.price)}</span>
       </div>
       <p className="text-xs text-zinc-500 mb-6">One-time payment · No subscription</p>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl px-4 py-3 mb-4">
+        <div className="bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-400 text-sm rounded-xl px-4 py-3 mb-4">
           {error}
         </div>
       )}
@@ -95,7 +95,7 @@ export function OrderForm({ listing }: OrderFormProps) {
 
         {!listing.includesContent && (
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wide">
+            <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1.5 uppercase tracking-wide">
               Article content <span className="text-zinc-500 font-normal normal-case tracking-normal">(optional — we&apos;ll write it if empty)</span>
             </label>
             <textarea
@@ -108,7 +108,7 @@ export function OrderForm({ listing }: OrderFormProps) {
         )}
 
         <div>
-          <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wide">
+          <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1.5 uppercase tracking-wide">
             Notes <span className="text-zinc-500 font-normal normal-case tracking-normal">(optional)</span>
           </label>
           <textarea
@@ -125,13 +125,13 @@ export function OrderForm({ listing }: OrderFormProps) {
         </Button>
       </form>
 
-      <div className="mt-5 pt-4 border-t border-zinc-800 space-y-2 text-xs text-zinc-400">
+      <div className="mt-5 pt-4 border-t border-zinc-200 dark:border-zinc-800 space-y-2 text-xs text-zinc-600 dark:text-zinc-400">
         <div className="flex items-center gap-1.5">
-          <Clock className="h-3.5 w-3.5 text-indigo-400" />
+          <Clock className="h-3.5 w-3.5 text-indigo-700 dark:text-indigo-400" />
           Delivered within {listing.turnaroundDays} business days
         </div>
         <div className="flex items-center gap-1.5">
-          <Shield className="h-3.5 w-3.5 text-emerald-400" />
+          <Shield className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400" />
           12-month link replacement guarantee
         </div>
       </div>

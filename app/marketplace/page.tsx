@@ -68,12 +68,12 @@ export default function MarketplacePage() {
   const hasActiveFilters = Object.entries(filters).some(([k, v]) => v !== "" && k !== "sortBy");
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       {/* Header */}
-      <div className="border-b border-zinc-800 bg-zinc-900/50">
+      <div className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-3xl font-bold text-white mb-1">Link Marketplace</h1>
-          <p className="text-zinc-400 text-sm">
+          <h1 className="text-3xl font-bold text-zinc-900 dark:text-white mb-1">Link Marketplace</h1>
+          <p className="text-zinc-600 dark:text-zinc-400 text-sm">
             {total > 0 ? <>{total.toLocaleString()} listings available</> : "Browse curated publisher listings"}
           </p>
         </div>
@@ -81,7 +81,7 @@ export default function MarketplacePage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Filter bar */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-6 space-y-4">
+        <div className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 mb-6 space-y-4">
           <div className="flex flex-col sm:flex-row gap-3">
             {/* Type tabs */}
             <div className="flex gap-2 flex-wrap">
@@ -91,7 +91,7 @@ export default function MarketplacePage() {
                     "px-3 py-1.5 rounded-lg text-sm font-medium border transition-all duration-150",
                     filters.type === t.value
                       ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/20"
-                      : "border-zinc-700 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                      : "border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-400 dark:hover:border-zinc-600 hover:text-zinc-900 dark:hover:text-white"
                   )}>
                   {t.label}
                 </button>
@@ -99,7 +99,7 @@ export default function MarketplacePage() {
             </div>
             <div className="flex gap-2 ml-auto">
               <select value={filters.sortBy} onChange={(e) => updateFilter("sortBy", e.target.value)}
-                className="rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                className="rounded-xl bg-zinc-200 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
                 {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
               <Button variant={showFilters ? "secondary" : "outline"} size="sm" onClick={() => setShowFilters(!showFilters)}>
@@ -112,7 +112,7 @@ export default function MarketplacePage() {
           </div>
 
           {showFilters && (
-            <div className="border-t border-zinc-800 pt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+            <div className="border-t border-zinc-200 dark:border-zinc-800 pt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
               <Select label="Niche" options={NICHES.map((n) => ({ value: n, label: n }))}
                 value={filters.niche || "All Niches"} onChange={(e) => updateFilter("niche", e.target.value)} />
               <Select label="Language" options={LANGUAGES.map((l) => ({ value: l, label: l }))}
@@ -126,31 +126,31 @@ export default function MarketplacePage() {
           )}
         </div>
 
-        {/* Grid */}
+        {/* List */}
         {loading ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-2xl h-64 animate-pulse" />
+          <div className="space-y-3">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl h-24 animate-pulse" />
             ))}
           </div>
         ) : listings.length === 0 ? (
           <div className="text-center py-24">
-            <div className="h-16 w-16 rounded-2xl bg-zinc-800 flex items-center justify-center mx-auto mb-4">
-              <Search className="h-8 w-8 text-zinc-600" />
+            <div className="h-16 w-16 rounded-2xl bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+              <Search className="h-8 w-8 text-zinc-400 dark:text-zinc-600" />
             </div>
-            <p className="text-white font-semibold text-lg mb-2">No listings found</p>
+            <p className="text-zinc-900 dark:text-white font-semibold text-lg mb-2">No listings found</p>
             <p className="text-zinc-500 text-sm mb-6">Try adjusting your filters or browse all listings</p>
             <Button variant="outline" onClick={resetFilters}>Reset Filters</Button>
           </div>
         ) : (
           <>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="space-y-3">
               {listings.map((listing) => <ListingCard key={listing.id} listing={listing} />)}
             </div>
             {totalPages > 1 && (
               <div className="flex items-center justify-center gap-3 mt-10">
                 <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>← Previous</Button>
-                <span className="text-sm text-zinc-400">Page {page} of {totalPages}</span>
+                <span className="text-sm text-zinc-600 dark:text-zinc-400">Page {page} of {totalPages}</span>
                 <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage((p) => p + 1)}>Next →</Button>
               </div>
             )}

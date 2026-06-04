@@ -40,7 +40,7 @@ function RegisterForm() {
   return (
     <>
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl px-4 py-3 mb-5">
+        <div className="bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-400 text-sm rounded-xl px-4 py-3 mb-5">
           {error}
         </div>
       )}
@@ -55,10 +55,10 @@ function RegisterForm() {
               "p-3 rounded-xl border-2 text-left transition-all duration-200",
               form.role === r.value
                 ? "border-indigo-500 bg-indigo-500/10"
-                : "border-zinc-700 bg-zinc-800/40 hover:border-zinc-600"
+                : "border-zinc-300 dark:border-zinc-700 bg-zinc-200/40 dark:bg-zinc-800/40 hover:border-zinc-400 dark:hover:border-zinc-600"
             )}>
             <div className="text-xl mb-1">{r.emoji}</div>
-            <div className={cn("text-sm font-semibold", form.role === r.value ? "text-indigo-400" : "text-zinc-300")}>{r.label}</div>
+            <div className={cn("text-sm font-semibold", form.role === r.value ? "text-indigo-700 dark:text-indigo-400" : "text-zinc-700 dark:text-zinc-300")}>{r.label}</div>
             <div className="text-xs text-zinc-500">{r.desc}</div>
           </button>
         ))}
@@ -77,7 +77,7 @@ function RegisterForm() {
       </form>
       <p className="text-center text-sm text-zinc-500 mt-6">
         Already have an account?{" "}
-        <Link href="/login" className="text-indigo-400 font-medium hover:text-indigo-300 transition-colors">Sign in</Link>
+        <Link href="/login" className="text-indigo-700 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">Sign in</Link>
       </p>
     </>
   );
@@ -85,7 +85,7 @@ function RegisterForm() {
 
 export default function RegisterPage() {
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-4 py-12 bg-zinc-950 overflow-hidden">
+    <div className="relative min-h-screen flex items-center justify-center px-4 py-12 bg-zinc-50 dark:bg-zinc-950 overflow-hidden">
       <div className="absolute inset-0 hero-mesh pointer-events-none" />
       <div className="absolute inset-0 bg-grid pointer-events-none" />
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -97,13 +97,13 @@ export default function RegisterPage() {
             <div className="h-9 w-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
               <Zap className="h-5 w-5 text-white" />
             </div>
-            <span className="font-bold text-xl text-white">Link<span className="text-indigo-400">Market</span></span>
+            <span className="font-bold text-xl text-zinc-900 dark:text-white">Link<span className="text-indigo-700 dark:text-indigo-400">Market</span></span>
           </Link>
-          <h1 className="text-2xl font-bold text-white">Create your account</h1>
-          <p className="text-zinc-400 text-sm mt-2">Free to join. No subscription required.</p>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Create your account</h1>
+          <p className="text-zinc-600 dark:text-zinc-400 text-sm mt-2">Free to join. No subscription required.</p>
         </div>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-2xl shadow-black/50">
-          <Suspense fallback={<div className="h-72 animate-pulse bg-zinc-800 rounded-xl" />}>
+        <div className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 shadow-2xl shadow-zinc-900/12 dark:shadow-black/50">
+          <Suspense fallback={<div className="h-72 animate-pulse bg-zinc-200 dark:bg-zinc-800 rounded-xl" />}>
             <RegisterForm />
           </Suspense>
         </div>

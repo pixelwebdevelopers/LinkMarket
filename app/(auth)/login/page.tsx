@@ -30,7 +30,7 @@ function LoginForm() {
   return (
     <>
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl px-4 py-3 mb-5">
+        <div className="bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-400 text-sm rounded-xl px-4 py-3 mb-5">
           {error}
         </div>
       )}
@@ -45,7 +45,7 @@ function LoginForm() {
       </form>
       <p className="text-center text-sm text-zinc-500 mt-6">
         Don&apos;t have an account?{" "}
-        <Link href="/register" className="text-indigo-400 font-medium hover:text-indigo-300 transition-colors">
+        <Link href="/register" className="text-indigo-700 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
           Create one free
         </Link>
       </p>
@@ -55,7 +55,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-4 bg-zinc-950 overflow-hidden">
+    <div className="relative min-h-screen flex items-center justify-center px-4 bg-zinc-50 dark:bg-zinc-950 overflow-hidden">
       {/* Background glow */}
       <div className="absolute inset-0 hero-mesh pointer-events-none" />
       <div className="absolute inset-0 bg-grid pointer-events-none" />
@@ -69,14 +69,14 @@ export default function LoginPage() {
             <div className="h-9 w-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
               <Zap className="h-5 w-5 text-white" />
             </div>
-            <span className="font-bold text-xl text-white">Link<span className="text-indigo-400">Market</span></span>
+            <span className="font-bold text-xl text-zinc-900 dark:text-white">Link<span className="text-indigo-700 dark:text-indigo-400">Market</span></span>
           </Link>
-          <h1 className="text-2xl font-bold text-white">Welcome back</h1>
-          <p className="text-zinc-400 text-sm mt-2">Sign in to your account to continue</p>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Welcome back</h1>
+          <p className="text-zinc-600 dark:text-zinc-400 text-sm mt-2">Sign in to your account to continue</p>
         </div>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-2xl shadow-black/50">
-          <Suspense fallback={<div className="h-48 animate-pulse bg-zinc-800 rounded-xl" />}>
+        <div className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 shadow-2xl shadow-zinc-900/12 dark:shadow-black/50">
+          <Suspense fallback={<div className="h-48 animate-pulse bg-zinc-200 dark:bg-zinc-800 rounded-xl" />}>
             <LoginForm />
           </Suspense>
         </div>

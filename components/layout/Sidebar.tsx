@@ -41,7 +41,7 @@ export function Sidebar() {
   );
 
   return (
-    <aside className="w-60 shrink-0 hidden lg:flex flex-col bg-zinc-950 border-r border-zinc-800 min-h-screen pt-6">
+    <aside className="w-60 shrink-0 hidden lg:flex flex-col bg-zinc-50 dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 min-h-screen pt-6">
       <nav className="flex flex-col gap-1 px-3">
         {filtered.map((item) => {
           const Icon = item.icon;
@@ -53,8 +53,8 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                 active
-                  ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
-                  : "text-zinc-400 hover:bg-zinc-800/60 hover:text-white"
+                  ? "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20"
+                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-white"
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />

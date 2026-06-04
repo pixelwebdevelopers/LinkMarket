@@ -10,17 +10,17 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", loading, children, disabled, ...props }, ref) => {
     const base =
-      "inline-flex items-center justify-center font-semibold rounded-xl cursor-pointer transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none select-none active:scale-[0.97] hover:-translate-y-0.5";
+      "inline-flex items-center justify-center font-semibold rounded-xl cursor-pointer transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-100 dark:focus:ring-offset-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none select-none active:scale-[0.97] hover:-translate-y-0.5";
 
     const variants = {
       primary:
         "bg-indigo-600 text-white hover:bg-indigo-500 active:bg-indigo-700 focus:ring-indigo-500 shadow-lg shadow-indigo-500/20",
       secondary:
-        "bg-zinc-800 text-zinc-100 hover:bg-zinc-700 active:bg-zinc-900 focus:ring-zinc-500 border border-zinc-700",
+        "bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-700 active:bg-zinc-100 dark:active:bg-zinc-900 focus:ring-zinc-500 border border-zinc-300 dark:border-zinc-700",
       outline:
-        "border border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white hover:border-zinc-600 focus:ring-zinc-500",
+        "border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white hover:border-zinc-400 dark:hover:border-zinc-600 focus:ring-zinc-500",
       ghost:
-        "text-zinc-400 hover:text-white hover:bg-zinc-800/60 focus:ring-zinc-500",
+        "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60 focus:ring-zinc-500",
       danger:
         "bg-red-600 text-white hover:bg-red-500 active:bg-red-700 focus:ring-red-500 shadow-lg shadow-red-500/20",
       success:

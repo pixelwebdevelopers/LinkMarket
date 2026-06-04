@@ -43,10 +43,10 @@ export default function OrdersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950">
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-20 bg-zinc-900 rounded-2xl border border-zinc-800 animate-pulse" />
+            <div key={i} className="h-20 bg-zinc-100 dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 animate-pulse" />
           ))}
         </div>
       </div>
@@ -54,18 +54,18 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
-        <h1 className="text-2xl font-bold text-white mb-6">My Orders</h1>
+        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mb-6">My Orders</h1>
 
         {orders.length === 0 ? (
           <div className="text-center py-20">
-            <div className="h-16 w-16 rounded-2xl bg-zinc-800 flex items-center justify-center mx-auto mb-4">
-              <ShoppingCart className="h-8 w-8 text-zinc-600" />
+            <div className="h-16 w-16 rounded-2xl bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+              <ShoppingCart className="h-8 w-8 text-zinc-400 dark:text-zinc-600" />
             </div>
-            <p className="font-semibold text-white">No orders yet</p>
+            <p className="font-semibold text-zinc-900 dark:text-white">No orders yet</p>
             <p className="text-sm mt-1 text-zinc-500">
-              <Link href="/marketplace" className="text-indigo-400 hover:text-indigo-300 transition-colors">
+              <Link href="/marketplace" className="text-indigo-700 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
                 Browse the marketplace
               </Link>{" "}
               to place your first order.
@@ -75,7 +75,7 @@ export default function OrdersPage() {
           <div className="space-y-3">
             {orders.map((order) => (
               <Link key={order.id} href={`/orders/${order.id}`}>
-                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex items-center gap-4 hover:border-indigo-500/30 hover:bg-zinc-900/80 transition-all duration-200 lift">
+                <div className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 flex items-center gap-4 hover:border-indigo-500/30 hover:bg-zinc-100/80 dark:hover:bg-zinc-900/80 transition-all duration-200 lift">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <Badge variant={statusVariant[order.status] ?? "default"}>
@@ -83,7 +83,7 @@ export default function OrdersPage() {
                       </Badge>
                       <span className="text-xs text-zinc-500">{formatDate(order.createdAt)}</span>
                     </div>
-                    <p className="font-semibold text-white text-sm truncate">
+                    <p className="font-semibold text-zinc-900 dark:text-white text-sm truncate">
                       {getDomainFromUrl(order.listing?.site?.url ?? "")}
                     </p>
                     <p className="text-xs text-zinc-500 truncate">
@@ -91,9 +91,9 @@ export default function OrdersPage() {
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="font-bold text-white">{formatCurrency(order.price)}</p>
+                    <p className="font-bold text-zinc-900 dark:text-white">{formatCurrency(order.price)}</p>
                     {order.articleUrl && (
-                      <span className="text-xs text-emerald-400">Live ✓</span>
+                      <span className="text-xs text-emerald-700 dark:text-emerald-400">Live ✓</span>
                     )}
                   </div>
                 </div>

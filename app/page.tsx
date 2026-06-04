@@ -33,21 +33,21 @@ const listingTypes = [
     desc: "Your article published on a real niche site with a permanent do-follow backlink.",
     icon: "✍️",
     color: "from-blue-500/10 to-indigo-500/10 border-blue-500/20",
-    badge: "bg-blue-500/10 text-blue-400 border border-blue-500/20",
+    badge: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20",
   },
   {
     name: "Niche Edit",
     desc: "Contextual link inserted into an existing article already ranking on Google.",
     icon: "🔗",
     color: "from-emerald-500/10 to-green-500/10 border-emerald-500/20",
-    badge: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
+    badge: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20",
   },
   {
     name: "Tier 2 Link",
     desc: "Amplify your primary backlinks with powerful secondary link signals.",
     icon: "🚀",
     color: "from-purple-500/10 to-violet-500/10 border-purple-500/20",
-    badge: "bg-purple-500/10 text-purple-400 border border-purple-500/20",
+    badge: "bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20",
   },
 ];
 
@@ -77,7 +77,7 @@ const niches = [
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-zinc-950 overflow-hidden">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 overflow-hidden">
 
       {/* Hero */}
       <section className="relative">
@@ -92,21 +92,21 @@ export default function HomePage() {
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 pb-16 text-center">
-          <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold px-4 py-2 rounded-full mb-8 animate-fade-in-up backdrop-blur-sm">
-            <span className="relative flex h-2 w-2 text-emerald-400">
+          <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-xs font-semibold px-4 py-2 rounded-full mb-8 animate-fade-in-up backdrop-blur-sm">
+            <span className="relative flex h-2 w-2 text-emerald-700 dark:text-emerald-400">
               <span className="ping-soft absolute inset-0" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
             </span>
             10,000+ live listings · updated weekly
           </div>
 
-          <h1 className="text-[2.75rem] leading-[1.05] sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight mb-6 animate-fade-in-up delay-100">
+          <h1 className="text-[2.75rem] leading-[1.05] sm:text-6xl lg:text-7xl font-extrabold text-zinc-900 dark:text-white tracking-tight mb-6 animate-fade-in-up delay-100">
             Build Links That
             <br />
             <span className="gradient-text">Actually Rank</span>
           </h1>
 
-          <p className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto mb-9 leading-relaxed animate-fade-in-up delay-200">
+          <p className="text-lg sm:text-xl text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto mb-9 leading-relaxed animate-fade-in-up delay-200">
             Buy guest posts and niche edits from 10,000+ real, vetted publishers.
             Fast delivery. Guaranteed quality. Transparent pricing.
           </p>
@@ -136,7 +136,7 @@ export default function HomePage() {
               ].map((g, i) => (
                 <div
                   key={i}
-                  className={`h-8 w-8 rounded-full bg-gradient-to-br ${g} ring-2 ring-zinc-950 grid place-items-center text-[10px] font-bold text-white`}
+                  className={`h-8 w-8 rounded-full bg-gradient-to-br ${g} ring-2 ring-white dark:ring-zinc-950 grid place-items-center text-[10px] font-bold text-white`}
                 >
                   {["A", "S", "J", "M", "R"][i]}
                 </div>
@@ -144,10 +144,10 @@ export default function HomePage() {
             </div>
             <div className="flex items-center gap-2">
               <div className="flex">
-                {[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />)}
+                {[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-700 dark:text-amber-400" />)}
               </div>
-              <span className="text-sm text-zinc-400">
-                <span className="font-semibold text-white">4.9/5</span> from 1,000+ SEOs
+              <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                <span className="font-semibold text-zinc-900 dark:text-white">4.9/5</span> from 1,000+ SEOs
               </span>
             </div>
           </div>
@@ -156,13 +156,13 @@ export default function HomePage() {
           <div className="relative max-w-3xl mx-auto animate-fade-in-up delay-500">
             {/* conic glow */}
             <div className="absolute -inset-10 rounded-[2rem] conic-glow blur-2xl opacity-50 pointer-events-none" />
-            <div className="relative float-card rounded-2xl border border-zinc-800 bg-zinc-900/80 backdrop-blur-xl shadow-2xl shadow-black/60 overflow-hidden">
+            <div className="relative float-card rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/80 backdrop-blur-xl shadow-2xl shadow-zinc-900/10 dark:shadow-black/60 overflow-hidden">
               {/* window chrome */}
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-800 bg-zinc-900/60">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-900/60">
                 <span className="h-3 w-3 rounded-full bg-red-500/80" />
                 <span className="h-3 w-3 rounded-full bg-amber-500/80" />
                 <span className="h-3 w-3 rounded-full bg-emerald-500/80" />
-                <div className="ml-3 flex-1 h-6 rounded-md bg-zinc-800/70 flex items-center px-3">
+                <div className="ml-3 flex-1 h-6 rounded-md bg-zinc-200/70 dark:bg-zinc-800/70 flex items-center px-3">
                   <Globe className="h-3 w-3 text-zinc-500 mr-2" />
                   <span className="text-[11px] text-zinc-500">linkmarket.io/marketplace</span>
                 </div>
@@ -170,32 +170,32 @@ export default function HomePage() {
               {/* sample listing rows */}
               <div className="p-4 sm:p-5 space-y-3 text-left">
                 {[
-                  { domain: "techcrunch-style.com", niche: "Technology", dr: 78, traffic: "1.2M", price: "$420", tag: "Guest Post", tagClass: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
-                  { domain: "financehub.io", niche: "Finance", dr: 65, traffic: "540K", price: "$310", tag: "Niche Edit", tagClass: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
-                  { domain: "healthdaily.co", niche: "Health", dr: 52, traffic: "210K", price: "$180", tag: "Tier 2", tagClass: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
+                  { domain: "techcrunch-style.com", niche: "Technology", dr: 78, traffic: "1.2M", price: "$420", tag: "Guest Post", tagClass: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20" },
+                  { domain: "financehub.io", niche: "Finance", dr: 65, traffic: "540K", price: "$310", tag: "Niche Edit", tagClass: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20" },
+                  { domain: "healthdaily.co", niche: "Health", dr: 52, traffic: "210K", price: "$180", tag: "Tier 2", tagClass: "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20" },
                 ].map((row, i) => (
                   <div
                     key={row.domain}
-                    className="flex items-center gap-3 sm:gap-4 rounded-xl border border-zinc-800 bg-zinc-900/60 px-3 sm:px-4 py-3 hover:border-indigo-500/30 transition-colors"
+                    className="flex items-center gap-3 sm:gap-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-900/60 px-3 sm:px-4 py-3 hover:border-indigo-500/30 transition-colors"
                     style={{ animationDelay: `${600 + i * 120}ms` }}
                   >
-                    <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-zinc-700 to-zinc-800 grid place-items-center shrink-0">
-                      <Globe className="h-4 w-4 text-zinc-400" />
+                    <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-zinc-300 dark:from-zinc-700 to-zinc-200 dark:to-zinc-800 grid place-items-center shrink-0">
+                      <Globe className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-white truncate">{row.domain}</span>
+                        <span className="text-sm font-semibold text-zinc-900 dark:text-white truncate">{row.domain}</span>
                         <span className={`hidden sm:inline-flex text-[10px] font-semibold px-1.5 py-0.5 rounded-md border ${row.tagClass}`}>{row.tag}</span>
                       </div>
                       <span className="text-xs text-zinc-500">{row.niche}</span>
                     </div>
                     <div className="hidden sm:block text-center shrink-0">
                       <p className="text-xs text-zinc-500">DR</p>
-                      <p className="text-sm font-bold text-white">{row.dr}</p>
+                      <p className="text-sm font-bold text-zinc-900 dark:text-white">{row.dr}</p>
                     </div>
                     <div className="hidden sm:block text-center shrink-0">
                       <p className="text-xs text-zinc-500">Traffic</p>
-                      <p className="text-sm font-bold text-white">{row.traffic}</p>
+                      <p className="text-sm font-bold text-zinc-900 dark:text-white">{row.traffic}</p>
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-sm font-bold gradient-text">{row.price}</p>
@@ -207,36 +207,36 @@ export default function HomePage() {
             </div>
 
             {/* floating mini stat badges */}
-            <div className="hidden sm:flex absolute -left-6 top-1/3 items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/90 backdrop-blur px-3 py-2 shadow-xl animate-float">
-              <div className="h-7 w-7 rounded-lg bg-emerald-500/15 grid place-items-center"><TrendingUp className="h-3.5 w-3.5 text-emerald-400" /></div>
-              <div><p className="text-[10px] text-zinc-500 leading-none mb-0.5">Avg. rank lift</p><p className="text-xs font-bold text-white">+18 spots</p></div>
+            <div className="hidden sm:flex absolute -left-6 top-1/3 items-center gap-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100/90 dark:bg-zinc-900/90 backdrop-blur px-3 py-2 shadow-xl animate-float">
+              <div className="h-7 w-7 rounded-lg bg-emerald-500/15 grid place-items-center"><TrendingUp className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /></div>
+              <div><p className="text-[10px] text-zinc-500 leading-none mb-0.5">Avg. rank lift</p><p className="text-xs font-bold text-zinc-900 dark:text-white">+18 spots</p></div>
             </div>
-            <div className="hidden sm:flex absolute -right-6 bottom-10 items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/90 backdrop-blur px-3 py-2 shadow-xl animate-float-slow">
-              <div className="h-7 w-7 rounded-lg bg-indigo-500/15 grid place-items-center"><Clock className="h-3.5 w-3.5 text-indigo-400" /></div>
-              <div><p className="text-[10px] text-zinc-500 leading-none mb-0.5">Avg. delivery</p><p className="text-xs font-bold text-white">24 hours</p></div>
+            <div className="hidden sm:flex absolute -right-6 bottom-10 items-center gap-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100/90 dark:bg-zinc-900/90 backdrop-blur px-3 py-2 shadow-xl animate-float-slow">
+              <div className="h-7 w-7 rounded-lg bg-indigo-500/15 grid place-items-center"><Clock className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" /></div>
+              <div><p className="text-[10px] text-zinc-500 leading-none mb-0.5">Avg. delivery</p><p className="text-xs font-bold text-zinc-900 dark:text-white">24 hours</p></div>
             </div>
           </div>
 
           {/* scroll indicator */}
           <div className="hidden sm:flex flex-col items-center gap-2 mt-14 animate-fade-in delay-700">
-            <span className="text-xs text-zinc-600 uppercase tracking-widest">Scroll</span>
-            <div className="h-9 w-5 rounded-full border border-zinc-700 grid justify-center pt-1.5">
+            <span className="text-xs text-zinc-400 dark:text-zinc-600 uppercase tracking-widest">Scroll</span>
+            <div className="h-9 w-5 rounded-full border border-zinc-300 dark:border-zinc-700 grid justify-center pt-1.5">
               <span className="h-1.5 w-1 rounded-full bg-zinc-500 animate-bob" />
             </div>
           </div>
         </div>
 
         {/* Niche marquee */}
-        <div className="relative max-w-full overflow-hidden py-7 border-y border-zinc-800/60 bg-zinc-900/30">
-          <p className="text-center text-xs text-zinc-600 uppercase tracking-[0.2em] mb-5">Every niche covered</p>
+        <div className="relative max-w-full overflow-hidden py-7 border-y border-zinc-200/60 dark:border-zinc-800/60 bg-zinc-100/30 dark:bg-zinc-900/30">
+          <p className="text-center text-xs text-zinc-400 dark:text-zinc-600 uppercase tracking-[0.2em] mb-5">Every niche covered</p>
           <div className="space-y-3 [mask-image:linear-gradient(to_right,transparent,#000_10%,#000_90%,transparent)]">
             <div className="marquee gap-3">
               {[...niches, ...niches].map((n, i) => (
                 <span
                   key={`${n}-${i}`}
-                  className="group shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-zinc-800 bg-zinc-900 text-sm text-zinc-400 whitespace-nowrap hover:border-indigo-500/40 hover:text-white hover:bg-indigo-500/10 transition-colors"
+                  className="group shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-sm text-zinc-600 dark:text-zinc-400 whitespace-nowrap hover:border-indigo-500/40 hover:text-zinc-900 dark:hover:text-white hover:bg-indigo-500/10 transition-colors"
                 >
-                  <span className="h-1.5 w-1.5 rounded-full bg-zinc-600 group-hover:bg-indigo-400 transition-colors" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 dark:bg-zinc-600 group-hover:bg-indigo-400 transition-colors" />
                   {n}
                 </span>
               ))}
@@ -245,9 +245,9 @@ export default function HomePage() {
               {[...[...niches].reverse(), ...[...niches].reverse()].map((n, i) => (
                 <span
                   key={`r-${n}-${i}`}
-                  className="group shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-zinc-800 bg-zinc-900 text-sm text-zinc-400 whitespace-nowrap hover:border-indigo-500/40 hover:text-white hover:bg-indigo-500/10 transition-colors"
+                  className="group shrink-0 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 text-sm text-zinc-600 dark:text-zinc-400 whitespace-nowrap hover:border-indigo-500/40 hover:text-zinc-900 dark:hover:text-white hover:bg-indigo-500/10 transition-colors"
                 >
-                  <span className="h-1.5 w-1.5 rounded-full bg-zinc-600 group-hover:bg-indigo-400 transition-colors" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 dark:bg-zinc-600 group-hover:bg-indigo-400 transition-colors" />
                   {n}
                 </span>
               ))}
@@ -257,19 +257,19 @@ export default function HomePage() {
       </section>
 
       {/* Stats */}
-      <section className="border-b border-zinc-800 bg-zinc-950">
+      <section className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <Reveal>
-            <div className="relative rounded-3xl border border-zinc-800 bg-zinc-900/40 dot-texture overflow-hidden">
+            <div className="relative rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100/40 dark:bg-zinc-900/40 dot-texture overflow-hidden">
               {/* ambient glow */}
               <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[500px] h-48 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
-              <div className="relative grid grid-cols-2 md:grid-cols-4 gap-px bg-zinc-800/60 [&>*]:bg-zinc-900/40 [&>*]:py-10 md:[&>*]:py-12">
+              <div className="relative grid grid-cols-2 md:grid-cols-4 gap-px bg-zinc-200/60 dark:bg-zinc-800/60 [&>*]:bg-zinc-100/40 dark:[&>*]:bg-zinc-900/40 [&>*]:py-10 md:[&>*]:py-12">
                 {stats.map((s, i) => {
                   const Icon = s.icon;
                   return (
                     <Reveal key={s.label} delay={i * 100} className="group text-center px-4">
                       <div className="h-12 w-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mx-auto mb-4 transition-all duration-300 group-hover:scale-110 group-hover:bg-indigo-500/20 group-hover:shadow-lg group-hover:shadow-indigo-500/20">
-                        <Icon className="h-5 w-5 text-indigo-400" />
+                        <Icon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                       </div>
                       <div className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-1 gradient-text">
                         <CountUp value={s.value} suffix={s.suffix} />
@@ -288,8 +288,8 @@ export default function HomePage() {
       <section id="link-types" className="scroll-mt-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
         <Reveal className="text-center mb-14">
           <span className="eyebrow mb-5">How it works</span>
-          <h2 className="text-3xl sm:text-5xl font-bold text-white mt-5 mb-4 tracking-tight">Three Ways to Build Links</h2>
-          <p className="text-zinc-400 text-lg max-w-xl mx-auto">Pick the right type for your SEO strategy and budget</p>
+          <h2 className="text-3xl sm:text-5xl font-bold text-zinc-900 dark:text-white mt-5 mb-4 tracking-tight">Three Ways to Build Links</h2>
+          <p className="text-zinc-600 dark:text-zinc-400 text-lg max-w-xl mx-auto">Pick the right type for your SEO strategy and budget</p>
         </Reveal>
         <div className="grid md:grid-cols-3 gap-6">
           {listingTypes.map((t, i) => (
@@ -297,15 +297,15 @@ export default function HomePage() {
               <SpotlightCard tilt maxTilt={7} className="h-full">
                 <div className={`group relative rounded-2xl border bg-gradient-to-br p-7 h-full overflow-hidden ${t.color}`}>
                   {/* big ghost number */}
-                  <span className="absolute -top-4 right-3 text-[7rem] font-black leading-none text-white/[0.04] select-none">
+                  <span className="absolute -top-4 right-3 text-[7rem] font-black leading-none text-zinc-900/[0.07] dark:text-white/[0.04] select-none">
                     {i + 1}
                   </span>
                   <div className="text-5xl mb-5 inline-block transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6 drop-shadow-lg">{t.icon}</div>
                   <div>
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg ${t.badge}`}>{t.name}</span>
-                    <p className="text-zinc-300 mt-4 text-sm leading-relaxed">{t.desc}</p>
+                    <p className="text-zinc-700 dark:text-zinc-300 mt-4 text-sm leading-relaxed">{t.desc}</p>
                   </div>
-                  <div className="mt-6 flex items-center gap-1.5 text-sm font-medium text-white/70 group-hover:text-white transition-colors">
+                  <div className="mt-6 flex items-center gap-1.5 text-sm font-medium text-zinc-700/80 dark:text-white/70 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors">
                     Learn more
                     <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                   </div>
@@ -317,15 +317,15 @@ export default function HomePage() {
       </section>
 
       {/* Features */}
-      <section id="features" className="scroll-mt-20 bg-zinc-900/40 border-y border-zinc-800 relative">
+      <section id="features" className="scroll-mt-20 bg-zinc-100/40 dark:bg-zinc-900/40 border-y border-zinc-200 dark:border-zinc-800 relative">
         <div className="absolute inset-0 bg-grid pointer-events-none opacity-50" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <Reveal className="text-center mb-14">
             <span className="eyebrow mb-5">Why LinkMarket</span>
-            <h2 className="text-3xl sm:text-5xl font-bold text-white mt-5 mb-4 tracking-tight">
+            <h2 className="text-3xl sm:text-5xl font-bold text-zinc-900 dark:text-white mt-5 mb-4 tracking-tight">
               Everything you need to <span className="gradient-text">rank faster</span>
             </h2>
-            <p className="text-zinc-400 text-lg">Built for SEOs who demand speed, quality, and transparency</p>
+            <p className="text-zinc-600 dark:text-zinc-400 text-lg">Built for SEOs who demand speed, quality, and transparency</p>
           </Reveal>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 auto-rows-fr">
@@ -335,13 +335,13 @@ export default function HomePage() {
               return (
                 <Reveal key={f.title} delay={(i % 4) * 80} className={cn("h-full", layout.span)}>
                   <SpotlightCard className="h-full">
-                    <div className="group relative h-full overflow-hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-indigo-500/40 transition-colors duration-300">
+                    <div className="group relative h-full overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 hover:border-indigo-500/40 transition-colors duration-300">
                       <div className="flex items-start justify-between">
                         <div className="h-12 w-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-4 transition-all duration-300 group-hover:bg-indigo-500/20 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-indigo-500/20">
-                          <Icon className="h-5 w-5 text-indigo-400" />
+                          <Icon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                         </div>
                         {i === 0 && (
-                          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400">
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
                             <span className="relative flex h-1.5 w-1.5">
                               <span className="ping-soft absolute inset-0" />
                               <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-400" />
@@ -350,8 +350,8 @@ export default function HomePage() {
                           </span>
                         )}
                       </div>
-                      <h3 className="font-bold text-white mb-2 text-lg">{f.title}</h3>
-                      <p className="text-sm text-zinc-400 leading-relaxed max-w-md">{f.desc}</p>
+                      <h3 className="font-bold text-zinc-900 dark:text-white mb-2 text-lg">{f.title}</h3>
+                      <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-md">{f.desc}</p>
 
                       {/* Big-tile extras */}
                       {i === 0 && (
@@ -360,10 +360,10 @@ export default function HomePage() {
                             <div key={step} className="flex items-center gap-2">
                               <span className={cn(
                                 "h-2 w-2 rounded-full",
-                                s < 2 ? "bg-indigo-500" : "bg-zinc-600 group-hover:bg-indigo-500 transition-colors duration-500"
+                                s < 2 ? "bg-indigo-500" : "bg-zinc-400 dark:bg-zinc-600 group-hover:bg-indigo-500 transition-colors duration-500"
                               )} />
                               <span className="text-xs text-zinc-500">{step}</span>
-                              {s < 2 && <span className="h-px w-6 bg-zinc-700" />}
+                              {s < 2 && <span className="h-px w-6 bg-zinc-300 dark:bg-zinc-700" />}
                             </div>
                           ))}
                         </div>
@@ -393,12 +393,12 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Reveal className="text-center mb-14">
             <span className="eyebrow mb-5">Loved by 1,000+ SEOs</span>
-            <h2 className="text-3xl sm:text-5xl font-bold text-white mt-5 mb-4 tracking-tight">Trusted by SEO Professionals</h2>
+            <h2 className="text-3xl sm:text-5xl font-bold text-zinc-900 dark:text-white mt-5 mb-4 tracking-tight">Trusted by SEO Professionals</h2>
             <div className="flex items-center justify-center gap-2">
               <div className="flex gap-0.5">
-                {[...Array(5)].map((_, i) => <Star key={i} className="h-5 w-5 fill-amber-400 text-amber-400" />)}
+                {[...Array(5)].map((_, i) => <Star key={i} className="h-5 w-5 fill-amber-400 text-amber-700 dark:text-amber-400" />)}
               </div>
-              <p className="text-zinc-400"><span className="font-semibold text-white">4.9/5</span> from 500+ reviews</p>
+              <p className="text-zinc-600 dark:text-zinc-400"><span className="font-semibold text-zinc-900 dark:text-white">4.9/5</span> from 500+ reviews</p>
             </div>
           </Reveal>
         </div>
@@ -413,21 +413,21 @@ export default function HomePage() {
               {[...track.rows, ...track.rows].map((t, i) => (
                 <div
                   key={`${t.name}-${i}`}
-                  className="group shrink-0 w-[340px] bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-indigo-500/30 hover:bg-zinc-900/80 transition-all duration-300"
+                  className="group shrink-0 w-[340px] bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 hover:border-indigo-500/30 hover:bg-zinc-100/80 dark:hover:bg-zinc-900/80 transition-all duration-300"
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex gap-0.5">
-                      {[...Array(t.rating)].map((_, j) => <Star key={j} className="h-4 w-4 fill-amber-400 text-amber-400" />)}
+                      {[...Array(t.rating)].map((_, j) => <Star key={j} className="h-4 w-4 fill-amber-400 text-amber-700 dark:text-amber-400" />)}
                     </div>
-                    <span className="text-4xl leading-none text-zinc-700 font-serif group-hover:text-indigo-500/40 transition-colors">&rdquo;</span>
+                    <span className="text-4xl leading-none text-zinc-400 dark:text-zinc-700 font-serif group-hover:text-indigo-500/40 transition-colors">&rdquo;</span>
                   </div>
-                  <p className="text-zinc-300 text-sm leading-relaxed mb-5">{t.text}</p>
+                  <p className="text-zinc-700 dark:text-zinc-300 text-sm leading-relaxed mb-5">{t.text}</p>
                   <div className="flex items-center gap-3">
-                    <div className={`h-10 w-10 rounded-full bg-gradient-to-br ${t.accent} flex items-center justify-center text-white font-bold text-sm ring-2 ring-zinc-950`}>
+                    <div className={`h-10 w-10 rounded-full bg-gradient-to-br ${t.accent} flex items-center justify-center text-white font-bold text-sm ring-2 ring-white dark:ring-zinc-950`}>
                       {t.name[0]}
                     </div>
                     <div>
-                      <p className="font-semibold text-white text-sm">{t.name}</p>
+                      <p className="font-semibold text-zinc-900 dark:text-white text-sm">{t.name}</p>
                       <p className="text-zinc-500 text-xs">{t.role}</p>
                     </div>
                   </div>
@@ -439,9 +439,9 @@ export default function HomePage() {
       </section>
 
       {/* CTA */}
-      <section className="relative border-t border-zinc-800 py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      <section className="relative border-t border-zinc-200 dark:border-zinc-800 py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <Reveal className="relative max-w-5xl mx-auto">
-          <div className="animated-border shadow-2xl shadow-indigo-950/40">
+          <div className="animated-border shadow-2xl shadow-indigo-500/20 dark:shadow-indigo-950/40">
             <div className="ab-inner relative overflow-hidden px-6 sm:px-12 py-16 sm:py-20 text-center">
               {/* inner ambience */}
               <div className="absolute inset-0 hero-mesh opacity-70 pointer-events-none" />
@@ -452,10 +452,10 @@ export default function HomePage() {
                 <span className="eyebrow mb-6">
                   <Sparkles className="h-3.5 w-3.5" /> Start in minutes
                 </span>
-                <h2 className="text-4xl sm:text-6xl font-extrabold text-white mt-6 mb-5 tracking-tight">
+                <h2 className="text-4xl sm:text-6xl font-extrabold text-zinc-900 dark:text-white mt-6 mb-5 tracking-tight">
                   Ready to <span className="gradient-text">Rank Higher?</span>
                 </h2>
-                <p className="text-zinc-300 text-lg max-w-xl mx-auto mb-10">
+                <p className="text-zinc-700 dark:text-zinc-300 text-lg max-w-xl mx-auto mb-10">
                   Join 1,000+ SEO professionals already using LinkMarket to build better links.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -472,10 +472,10 @@ export default function HomePage() {
                     </Button>
                   </Link>
                 </div>
-                <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-10 text-sm text-zinc-400">
+                <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mt-10 text-sm text-zinc-600 dark:text-zinc-400">
                   {["Free to join", "No credit card required", "Cancel anytime"].map((t) => (
                     <span key={t} className="flex items-center gap-1.5">
-                      <CheckCircle className="h-4 w-4 text-emerald-400" /> {t}
+                      <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> {t}
                     </span>
                   ))}
                 </div>

@@ -10,7 +10,12 @@
       "Bash(curl -s -o /dev/null -w \"home=%{http_code}\\\\n\" http://localhost:3000/)",
       "Bash(npx eslint *)",
       "Bash(echo \"=== exit $? ===\")",
-      "Bash(curl -s -o /dev/null -w \"login=%{http_code}  marketplace=%{http_code}\\\\n\" http://localhost:3000/login)"
+      "Bash(curl -s -o /dev/null -w \"login=%{http_code}  marketplace=%{http_code}\\\\n\" http://localhost:3000/login)",
+      "Bash(git checkout *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:57777/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:58291/)",
+      "Bash(PORT=58999 timeout 30 npm run dev)",
+      "Bash(curl -s http://localhost:3000/)"
     ]
   }
 }
