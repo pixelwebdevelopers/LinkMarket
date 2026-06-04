@@ -2,18 +2,15 @@
 
 import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Zap, ArrowRight } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 function RegisterForm() {
   const router = useRouter();
-  const params = useSearchParams();
-  const defaultRole = params.get("role")?.toUpperCase() === "PUBLISHER" ? "PUBLISHER" : "BUYER";
-  const [form, setForm] = useState({ name: "", email: "", password: "", role: defaultRole });
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -44,25 +41,11 @@ function RegisterForm() {
           {error}
         </div>
       )}
-      {/* Role selector */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
-        {[
-          { value: "BUYER", label: "I'm a Buyer", emoji: "🛒", desc: "Buy backlinks" },
-          { value: "PUBLISHER", label: "I'm a Publisher", emoji: "🌐", desc: "Sell placements" },
-        ].map((r) => (
-          <button key={r.value} type="button" onClick={() => update("role", r.value)}
-            className={cn(
-              "p-3 rounded-xl border-2 text-left transition-all duration-200",
-              form.role === r.value
-                ? "border-indigo-500 bg-indigo-500/10"
-                : "border-zinc-300 dark:border-zinc-700 bg-zinc-200/40 dark:bg-zinc-800/40 hover:border-zinc-400 dark:hover:border-zinc-600"
-            )}>
-            <div className="text-xl mb-1">{r.emoji}</div>
-            <div className={cn("text-sm font-semibold", form.role === r.value ? "text-indigo-700 dark:text-indigo-400" : "text-zinc-700 dark:text-zinc-300")}>{r.label}</div>
-            <div className="text-xs text-zinc-500">{r.desc}</div>
-          </button>
-        ))}
-      </div>
+      <p className="text-xs text-zinc-500 mb-5">
+        Registering creates a customer account. Reseller accounts are created by our team — contact us at{" "}
+        <a href="mailto:support@linkmarket.io" className="text-indigo-700 dark:text-indigo-400">support@linkmarket.io</a>{" "}
+        to apply.
+      </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input id="name" label="Full name" placeholder="John Smith"

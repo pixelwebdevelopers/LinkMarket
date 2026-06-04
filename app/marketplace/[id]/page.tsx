@@ -4,6 +4,7 @@ import { formatNumber, getDomainFromUrl, formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { OrderForm } from "@/components/marketplace/OrderForm";
 import { ExternalLink, Shield, CheckCircle, Globe } from "lucide-react";
+import { priceListing } from "@/lib/commission";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -12,7 +13,6 @@ interface Props {
 const typeLabels: Record<string, string> = {
   GUEST_POST: "Guest Post",
   NICHE_EDIT: "Niche Edit",
-  TIER2: "Tier 2 Link",
 };
 
 export default async function ListingPage({ params }: Props) {
@@ -27,6 +27,8 @@ export default async function ListingPage({ params }: Props) {
 
   if (!listing || listing.site.status !== "APPROVED") notFound();
 
+  const split = await priceListing(listing.id);
+
   const { site, type, turnaroundDays, doFollow, includesContent, wordCount, extraNotes } = listing;
   const metrics = site.metrics;
 
@@ -38,7 +40,7 @@ export default async function ListingPage({ params }: Props) {
         <div className="lg:col-span-2 space-y-6">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Badge variant={type === "GUEST_POST" ? "info" : type === "NICHE_EDIT" ? "success" : "purple"}>
+              <Badge variant={type === "GUEST_POST" ? "info" : "success"}>
                 {typeLabels[type] ?? type}
               </Badge>
               {doFollow && <Badge variant="success">DoFollow</Badge>}
@@ -141,7 +143,15 @@ export default async function ListingPage({ params }: Props) {
         {/* Right: Order form */}
         <div className="lg:col-span-1">
           <div className="sticky top-24">
-            <OrderForm listing={listing} />
+            <OrderForm
+              listing={{
+                id: listing.id,
+                type: listing.type,
+                finalPriceCents: split.customerPriceCents,
+                turnaroundDays: listing.turnaroundDays,
+                includesContent: listing.includesContent,
+              }}
+            />
           </div>
         </div>
       </div>

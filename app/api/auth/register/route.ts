@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
-import { Role } from "@prisma/client";
 
+// Public registration only creates Customer accounts.
+// Resellers can ONLY be created by an admin via /api/admin/resellers.
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, password, role } = await req.json();
+    const { name, email, password } = await req.json();
 
     if (!email || !password || !name) {
       return NextResponse.json({ error: "All fields are required" }, { status: 400 });
@@ -21,18 +22,13 @@ export async function POST(req: NextRequest) {
     }
 
     const hashed = await bcrypt.hash(password, 12);
-    const userRole: Role = role === "PUBLISHER" ? "PUBLISHER" : "BUYER";
 
     const user = await db.user.create({
       data: {
         name,
         email,
         password: hashed,
-        role: userRole,
-        // Auto-create publisher profile if registering as publisher
-        ...(userRole === "PUBLISHER" && {
-          publisher: { create: { status: "PENDING" } },
-        }),
+        role: "CUSTOMER",
       },
     });
 

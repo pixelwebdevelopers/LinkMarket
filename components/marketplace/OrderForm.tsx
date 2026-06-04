@@ -5,17 +5,21 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatCurrency } from "@/lib/utils";
 import { Shield, Clock } from "lucide-react";
 
 interface OrderFormProps {
   listing: {
     id: string;
     type: string;
-    price: number;
+    /** Customer-facing price in cents, already commission-adjusted. */
+    finalPriceCents: number;
     turnaroundDays: number;
     includesContent: boolean;
   };
+}
+
+function fmtCents(c: number) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(c / 100);
 }
 
 export function OrderForm({ listing }: OrderFormProps) {
@@ -37,26 +41,42 @@ export function OrderForm({ listing }: OrderFormProps) {
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        listingId: listing.id,
-        targetUrl,
-        anchorText,
-        notes,
-        contentBody: listing.includesContent ? undefined : contentBody,
-      }),
-    });
+    try {
+      // 1. Create the pending-payment order
+      const orderRes = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          listingId: listing.id,
+          targetUrl,
+          anchorText,
+          notes,
+          contentBody: listing.includesContent ? undefined : contentBody,
+        }),
+      });
+      const orderData = await orderRes.json();
+      if (!orderRes.ok) throw new Error(orderData.error ?? "Failed to create order.");
 
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error ?? "Failed to place order.");
+      // 2. Create Stripe Checkout Session
+      const checkoutRes = await fetch("/api/checkout/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: orderData.id }),
+      });
+      const checkoutData = await checkoutRes.json();
+      if (!checkoutRes.ok) {
+        // If checkout fails (e.g. Stripe not configured) we still land on the order page.
+        // The order remains PENDING_PAYMENT and the customer can retry.
+        router.push(`/orders/${orderData.id}?error=${encodeURIComponent(checkoutData.error ?? "Checkout failed")}`);
+        return;
+      }
+
+      // 3. Redirect to Stripe-hosted checkout
+      window.location.href = checkoutData.url;
+    } catch (err: any) {
+      setError(err.message ?? String(err));
       setLoading(false);
-      return;
     }
-
-    router.push(`/orders/${data.id}?success=true`);
   }
 
   const textareaClass =
@@ -66,7 +86,7 @@ export function OrderForm({ listing }: OrderFormProps) {
     <div className="bg-zinc-100 dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xl shadow-zinc-900/10 dark:shadow-black/40 p-6">
       <div className="flex items-center justify-between mb-1">
         <h2 className="font-bold text-zinc-900 dark:text-white text-lg">Place Order</h2>
-        <span className="text-2xl font-bold gradient-text">{formatCurrency(listing.price)}</span>
+        <span className="text-2xl font-bold gradient-text">{fmtCents(listing.finalPriceCents)}</span>
       </div>
       <p className="text-xs text-zinc-500 mb-6">One-time payment · No subscription</p>
 
@@ -121,7 +141,7 @@ export function OrderForm({ listing }: OrderFormProps) {
         </div>
 
         <Button type="submit" className="w-full" size="lg" loading={loading}>
-          {session ? `Pay ${formatCurrency(listing.price)}` : "Sign in to Order"}
+          {session ? `Pay ${fmtCents(listing.finalPriceCents)}` : "Sign in to Order"}
         </Button>
       </form>
 

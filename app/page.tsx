@@ -42,13 +42,6 @@ const listingTypes = [
     color: "from-emerald-500/10 to-green-500/10 border-emerald-500/20",
     badge: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20",
   },
-  {
-    name: "Tier 2 Link",
-    desc: "Amplify your primary backlinks with powerful secondary link signals.",
-    icon: "🚀",
-    color: "from-purple-500/10 to-violet-500/10 border-purple-500/20",
-    badge: "bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20",
-  },
 ];
 
 const testimonials = [
@@ -172,7 +165,7 @@ export default function HomePage() {
                 {[
                   { domain: "techcrunch-style.com", niche: "Technology", dr: 78, traffic: "1.2M", price: "$420", tag: "Guest Post", tagClass: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20" },
                   { domain: "financehub.io", niche: "Finance", dr: 65, traffic: "540K", price: "$310", tag: "Niche Edit", tagClass: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20" },
-                  { domain: "healthdaily.co", niche: "Health", dr: 52, traffic: "210K", price: "$180", tag: "Tier 2", tagClass: "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20" },
+                  { domain: "healthdaily.co", niche: "Health", dr: 52, traffic: "210K", price: "$180", tag: "Guest Post", tagClass: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20" },
                 ].map((row, i) => (
                   <div
                     key={row.domain}
@@ -288,10 +281,10 @@ export default function HomePage() {
       <section id="link-types" className="scroll-mt-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
         <Reveal className="text-center mb-14">
           <span className="eyebrow mb-5">How it works</span>
-          <h2 className="text-3xl sm:text-5xl font-bold text-zinc-900 dark:text-white mt-5 mb-4 tracking-tight">Three Ways to Build Links</h2>
+          <h2 className="text-3xl sm:text-5xl font-bold text-zinc-900 dark:text-white mt-5 mb-4 tracking-tight">Two Ways to Build Links</h2>
           <p className="text-zinc-600 dark:text-zinc-400 text-lg max-w-xl mx-auto">Pick the right type for your SEO strategy and budget</p>
         </Reveal>
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
           {listingTypes.map((t, i) => (
             <Reveal key={t.name} delay={i * 120} className="h-full">
               <SpotlightCard tilt maxTilt={7} className="h-full">

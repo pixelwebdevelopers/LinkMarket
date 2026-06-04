@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatCurrency, getDomainFromUrl } from "@/lib/utils";
+import { getDomainFromUrl } from "@/lib/utils";
 import { Globe, PlusCircle, CheckCircle } from "lucide-react";
 
 const statusVariant: Record<string, any> = {
@@ -14,6 +14,10 @@ const statusVariant: Record<string, any> = {
   REJECTED: "danger",
   SUSPENDED: "danger",
 };
+
+function formatCents(cents: number) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+}
 
 function SubmittedBanner() {
   const searchParams = useSearchParams();
@@ -30,15 +34,21 @@ function SubmittedBanner() {
   );
 }
 
-export default function PublisherPage() {
-  const [publisher, setPublisher] = useState<any>(null);
+export default function ResellerSitesPage() {
+  const [sites, setSites] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/publisher/sites")
+    fetch("/api/reseller/sites")
       .then((r) => r.json())
       .then((d) => {
-        setPublisher(d);
+        if (Array.isArray(d)) setSites(d);
+        else setError(d?.error ?? "Failed to load sites");
+        setLoading(false);
+      })
+      .catch((e) => {
+        setError(String(e));
         setLoading(false);
       });
   }, []);
@@ -55,9 +65,9 @@ export default function PublisherPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">My Sites</h1>
-            <p className="text-zinc-600 dark:text-zinc-400 text-sm mt-1">Manage your publisher listings</p>
+            <p className="text-zinc-600 dark:text-zinc-400 text-sm mt-1">Sites you've listed on the marketplace</p>
           </div>
-          <Link href="/publisher/new">
+          <Link href="/reseller/new">
             <Button size="sm">
               <PlusCircle className="h-4 w-4" /> Add Site
             </Button>
@@ -68,33 +78,43 @@ export default function PublisherPage() {
           <SubmittedBanner />
         </Suspense>
 
-        {!publisher || publisher.error ? (
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-400 text-sm rounded-xl px-4 py-3 mb-6">
+            {error}
+          </div>
+        )}
+
+        {sites.length === 0 ? (
           <div className="text-center py-20">
             <div className="h-16 w-16 rounded-2xl bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-4">
               <Globe className="h-8 w-8 text-zinc-400 dark:text-zinc-600" />
             </div>
             <p className="font-semibold text-zinc-900 dark:text-white">No sites yet</p>
             <p className="text-sm mt-1 text-zinc-500">Submit your first site to start earning.</p>
-            <Link href="/publisher/new">
+            <Link href="/reseller/new">
               <Button className="mt-4">Submit a Site</Button>
             </Link>
           </div>
         ) : (
           <div className="space-y-4">
-            {publisher.sites?.map((site: any) => (
+            {sites.map((site: any) => (
               <div key={site.id} className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 lift hover:border-indigo-500/30">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <Badge variant={statusVariant[site.status] ?? "default"}>{site.status}</Badge>
                       <span className="text-xs text-zinc-500">{site.niche}</span>
+                      {site.rejectionReason && (
+                        <span className="text-xs text-red-700 dark:text-red-400">Reason: {site.rejectionReason}</span>
+                      )}
                     </div>
                     <h2 className="font-semibold text-zinc-900 dark:text-white">{getDomainFromUrl(site.url)}</h2>
                     {site.metrics && (
-                      <div className="flex gap-4 mt-2 text-xs text-zinc-500">
+                      <div className="flex gap-4 mt-2 text-xs text-zinc-500 flex-wrap">
                         <span>DR: <strong className="text-zinc-700 dark:text-zinc-300">{site.metrics.domainRating}</strong></span>
                         <span>DA: <strong className="text-zinc-700 dark:text-zinc-300">{site.metrics.domainAuthority}</strong></span>
                         <span>Traffic: <strong className="text-zinc-700 dark:text-zinc-300">{site.metrics.organicTraffic?.toLocaleString()}</strong></span>
+                        <span>RD: <strong className="text-zinc-700 dark:text-zinc-300">{site.metrics.referringDomains?.toLocaleString()}</strong></span>
                       </div>
                     )}
                   </div>
@@ -111,9 +131,11 @@ export default function PublisherPage() {
                           <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
                             {l.type.replace("_", " ")}
                           </span>
-                          <span className="font-semibold text-zinc-900 dark:text-white text-sm">{formatCurrency(l.price)}</span>
+                          <span className="font-semibold text-zinc-900 dark:text-white text-sm">{formatCents(l.basePriceCents)}</span>
                         </div>
-                        <p className="text-xs text-zinc-500 mt-1">{l.turnaroundDays}d delivery · {l.doFollow ? "DoFollow" : "NoFollow"}</p>
+                        <p className="text-xs text-zinc-500 mt-1">
+                          Base price (you earn). {l.turnaroundDays}d delivery · {l.doFollow ? "DoFollow" : "NoFollow"}
+                        </p>
                       </div>
                     ))}
                   </div>

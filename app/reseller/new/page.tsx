@@ -64,7 +64,7 @@ export default function NewSitePage() {
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/publisher/sites", {
+    const res = await fetch("/api/reseller/sites", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...site, listings }),
@@ -77,7 +77,7 @@ export default function NewSitePage() {
       return;
     }
 
-    router.push("/publisher?submitted=true");
+    router.push("/reseller?submitted=true");
   }
 
   return (
@@ -179,7 +179,6 @@ export default function NewSitePage() {
                   options={[
                     { value: "GUEST_POST", label: "Guest Post" },
                     { value: "NICHE_EDIT", label: "Niche Edit" },
-                    { value: "TIER2", label: "Tier 2" },
                   ]}
                   value={listing.type}
                   onChange={(e) => updateListing(i, "type", e.target.value)}

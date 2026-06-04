@@ -46,9 +46,9 @@ export default function AdminPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
-              {role === "MANAGER" ? "Manager Panel" : "Admin Panel"}
+              {role === "ADMIN" ? "Admin Panel" : "Admin Panel"}
             </h1>
-            <p className="text-zinc-600 dark:text-zinc-400 text-sm mt-1">Manage publishers, sites and metrics</p>
+            <p className="text-zinc-600 dark:text-zinc-400 text-sm mt-1">Manage resellers, sites and metrics</p>
           </div>
           <Link href="/admin/metrics">
             <Button variant="outline" size="sm"><BarChart2 className="h-4 w-4" /> Update Metrics</Button>
@@ -63,7 +63,7 @@ export default function AdminPage() {
             { label: "Total Sites", value: sites.length, icon: Globe, color: "text-indigo-700 dark:text-indigo-400 bg-indigo-500/10 border-indigo-500/20" },
             { label: "Pending Review", value: pending.length, icon: Clock, color: "text-amber-700 dark:text-amber-400 bg-amber-500/10 border-amber-500/20" },
             { label: "Approved Sites", value: approved.length, icon: CheckCircle, color: "text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20" },
-            { label: "Publishers", value: new Set(sites.map((s) => s.publisherId)).size, icon: Users, color: "text-purple-700 dark:text-purple-400 bg-purple-500/10 border-purple-500/20" },
+            { label: "Owners", value: new Set(sites.map((s) => s.ownerId)).size, icon: Users, color: "text-purple-700 dark:text-purple-400 bg-purple-500/10 border-purple-500/20" },
           ].map((stat) => {
             const Icon = stat.icon;
             return (
@@ -98,7 +98,7 @@ export default function AdminPage() {
                       </div>
                       <h3 className="font-bold text-zinc-900 dark:text-white">{getDomainFromUrl(site.url)}</h3>
                       <p className="text-xs text-zinc-500 mt-1">
-                        Submitted: {formatDate(site.createdAt)} · {site.publisher?.user?.email}
+                        Submitted: {formatDate(site.createdAt)} · {site.owner?.email} ({site.owner?.role})
                       </p>
                       {site.description && <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">{site.description}</p>}
                       <div className="flex gap-4 mt-3">

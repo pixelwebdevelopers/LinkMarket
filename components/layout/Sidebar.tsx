@@ -24,17 +24,24 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/marketplace", label: "Marketplace", icon: Globe },
-  { href: "/orders", label: "My Orders", icon: ShoppingCart, roles: ["BUYER", "ADMIN"] },
-  { href: "/publisher", label: "My Sites", icon: List, roles: ["PUBLISHER", "ADMIN"] },
-  { href: "/publisher/new", label: "Add Site", icon: PlusCircle, roles: ["PUBLISHER", "ADMIN"] },
-  { href: "/admin", label: "Admin Panel", icon: Shield, roles: ["ADMIN", "MANAGER"] },
-  { href: "/admin/metrics", label: "Update Metrics", icon: BarChart2, roles: ["ADMIN", "MANAGER"] },
+  { href: "/orders", label: "My Orders", icon: ShoppingCart, roles: ["CUSTOMER", "RESELLER", "ADMIN"] },
+  { href: "/reseller", label: "My Sites", icon: List, roles: ["RESELLER", "ADMIN"] },
+  { href: "/reseller/new", label: "Add Site", icon: PlusCircle, roles: ["RESELLER", "ADMIN"] },
+  { href: "/reseller/earnings", label: "Earnings", icon: BarChart2, roles: ["RESELLER"] },
+  { href: "/reseller/bank-accounts", label: "Bank Accounts", icon: List, roles: ["RESELLER"] },
+  { href: "/admin", label: "Admin Panel", icon: Shield, roles: ["ADMIN"] },
+  { href: "/admin/resellers", label: "Resellers", icon: List, roles: ["ADMIN"] },
+  { href: "/admin/payouts", label: "Payouts", icon: BarChart2, roles: ["ADMIN"] },
+  { href: "/admin/disputes", label: "Disputes", icon: BarChart2, roles: ["ADMIN"] },
+  { href: "/admin/metrics", label: "Update Metrics", icon: BarChart2, roles: ["ADMIN"] },
+  { href: "/admin/audit", label: "Audit log", icon: BarChart2, roles: ["ADMIN"] },
+  { href: "/admin/settings", label: "Settings", icon: BarChart2, roles: ["ADMIN"] },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const role = session?.user?.role ?? "BUYER";
+  const role = session?.user?.role ?? "CUSTOMER";
 
   const filtered = navItems.filter(
     (item) => !item.roles || item.roles.includes(role)

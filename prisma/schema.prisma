@@ -10,20 +10,26 @@ datasource db {
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 enum Role {
-  BUYER
-  PUBLISHER
-  MANAGER
+  CUSTOMER
+  RESELLER
   ADMIN
+}
+
+enum SiteStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
 }
 
 enum ListingType {
   GUEST_POST
   NICHE_EDIT
-  TIER2
 }
 
 enum OrderStatus {
-  PENDING
+  PENDING_PAYMENT
+  PAID
   IN_PROGRESS
   CONTENT_NEEDED
   SUBMITTED
@@ -31,20 +37,50 @@ enum OrderStatus {
   COMPLETED
   CANCELLED
   REJECTED
-}
-
-enum PublisherStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  SUSPENDED
-}
-
-enum PaymentStatus {
-  PENDING
-  PAID
-  FAILED
+  DISPUTED
   REFUNDED
+}
+
+enum PayoutStatus {
+  REQUESTED
+  APPROVED
+  PAID
+  REJECTED
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED_CUSTOMER
+  RESOLVED_RESELLER
+  WITHDRAWN
+}
+
+enum LedgerEntryType {
+  ORDER_GROSS
+  ADMIN_COMMISSION
+  RESELLER_EARNING
+  REFUND
+  PAYOUT
+}
+
+enum NotificationType {
+  ORDER_CREATED
+  ORDER_PAID
+  ORDER_PAYMENT_FAILED
+  ORDER_STATUS_CHANGED
+  ORDER_DISPUTED
+  DISPUTE_RESOLVED
+  SITE_SUBMITTED
+  SITE_APPROVED
+  SITE_REJECTED
+  SITE_METRIC_UPDATED
+  PAYOUT_REQUESTED
+  PAYOUT_APPROVED
+  PAYOUT_PAID
+  PAYOUT_REJECTED
+  NEW_MESSAGE
+  GENERIC
 }
 
 // ─── User ─────────────────────────────────────────────────────────────────────
@@ -56,17 +92,31 @@ model User {
   emailVerified DateTime?
   image         String?
   password      String?
-  role          Role      @default(BUYER)
-  credits       Float     @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  role          Role      @default(CUSTOMER)
 
-  accounts      Account[]
-  sessions      Session[]
-  publisher     Publisher?
-  orders        Order[]
-  blacklist     Blacklist[]
-  transactions  Transaction[]
+  // reseller-only overrides (null = use global settings)
+  defaultCommissionPct Float?
+  payoutThresholdCents Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts        Account[]
+  sessions        Session[]
+  sites           Site[]
+  orders          Order[]          @relation("Customer")
+  ordersToFulfill Order[]          @relation("Fulfiller")
+  bankAccounts    BankAccount[]
+  payouts         Payout[]
+  ledgerEntries   LedgerEntry[]
+  notifications   Notification[]
+  disputesOpened  Dispute[]        @relation("DisputeOpener")
+  disputesResolved Dispute[]       @relation("DisputeResolver")
+  messages        OrderMessage[]
+  auditLogs       AuditLog[]
+  metricUpdates   SiteMetrics[]    @relation("MetricUpdater")
+  approvedSites   Site[]           @relation("SiteApprover")
+  blacklist       Blacklist[]
 }
 
 // ─── NextAuth Models ──────────────────────────────────────────────────────────
@@ -107,57 +157,51 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// ─── Publisher ────────────────────────────────────────────────────────────────
-
-model Publisher {
-  id        String          @id @default(cuid())
-  userId    String          @unique
-  status    PublisherStatus @default(PENDING)
-  bio       String?
-  website   String?
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sites Site[]
-}
-
 // ─── Site ─────────────────────────────────────────────────────────────────────
 
 model Site {
-  id            String          @id @default(cuid())
-  publisherId   String
-  url           String          @unique
-  name          String
-  description   String?
-  language      String          @default("English")
-  country       String          @default("US")
-  niche         String
-  status        PublisherStatus @default(PENDING)
-  exampleUrl    String?         // example live link on this site
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id              String     @id @default(cuid())
+  ownerId         String
+  url             String     @unique
+  name            String
+  description     String?
+  language        String     @default("English")
+  country         String     @default("US")
+  niche           String
+  status          SiteStatus @default(PENDING)
+  exampleUrl      String?
+  // optional per-site commission override (null = use reseller default or global)
+  commissionPctOverride Float?
 
-  publisher Publisher    @relation(fields: [publisherId], references: [id], onDelete: Cascade)
+  rejectionReason String?
+  approvedAt      DateTime?
+  approvedById    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner     User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  approver  User?        @relation("SiteApprover", fields: [approvedById], references: [id])
   metrics   SiteMetrics?
   listings  Listing[]
   blacklist Blacklist[]
 }
 
-// ─── SiteMetrics (manually updated by admin weekly) ───────────────────────────
+// ─── SiteMetrics ──────────────────────────────────────────────────────────────
 
 model SiteMetrics {
-  id                String   @id @default(cuid())
-  siteId            String   @unique
-  domainRating      Float    @default(0)   // Ahrefs DR
-  domainAuthority   Float    @default(0)   // Moz DA
-  organicTraffic    Int      @default(0)   // monthly organic visits
-  referringDomains  Int      @default(0)
-  spamScore         Float    @default(0)   // Moz spam score (0-17)
-  updatedAt         DateTime @default(now())
-  updatedById       String?  // admin who last updated
+  id               String   @id @default(cuid())
+  siteId           String   @unique
+  domainRating     Float    @default(0)
+  domainAuthority  Float    @default(0)
+  organicTraffic   Int      @default(0)
+  referringDomains Int      @default(0)
+  spamScore        Float    @default(0)
+  updatedAt        DateTime @default(now())
+  updatedById      String?
 
-  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  site      Site  @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  updatedBy User? @relation("MetricUpdater", fields: [updatedById], references: [id])
 }
 
 // ─── Listing ──────────────────────────────────────────────────────────────────
@@ -166,12 +210,14 @@ model Listing {
   id              String      @id @default(cuid())
   siteId          String
   type            ListingType
-  price           Float
+  // basePriceCents = what the reseller wants to earn (or admin's true price for admin-owned sites)
+  // Customer-facing final price is computed on the fly: basePriceCents + commission
+  basePriceCents  Int
   turnaroundDays  Int         @default(3)
   isActive        Boolean     @default(true)
-  wordCount       Int?        // for guest posts
+  wordCount       Int?
   doFollow        Boolean     @default(true)
-  includesContent Boolean     @default(false) // does price include article writing?
+  includesContent Boolean     @default(false)
   extraNotes      String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -183,39 +229,189 @@ model Listing {
 // ─── Order ────────────────────────────────────────────────────────────────────
 
 model Order {
-  id           String      @id @default(cuid())
-  buyerId      String
-  listingId    String
-  status       OrderStatus @default(PENDING)
-  anchorText   String?
-  targetUrl    String?     // buyer's URL to link to
-  articleUrl   String?     // live published URL (filled by publisher)
-  notes        String?
-  contentBody  String?     // article content (if buyer provides it)
-  price        Float
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id          String      @id @default(cuid())
+  customerId  String
+  fulfillerId String // user who owns the listing's site (admin or reseller)
+  listingId   String
+  status      OrderStatus @default(PENDING_PAYMENT)
 
-  buyer       User        @relation(fields: [buyerId], references: [id])
-  listing     Listing     @relation(fields: [listingId], references: [id])
-  transaction Transaction?
+  // pricing snapshot at the moment the order was created
+  pricePaidCents       Int // what the customer paid (gross)
+  adminCommissionCents Int // admin's cut from this order
+  resellerEarningCents Int // reseller's cut (0 for admin-owned listings)
+  commissionPctSnapshot Float // effective commission % used at order time
+
+  // order content
+  anchorText  String?
+  targetUrl   String?
+  articleUrl  String?
+  notes       String?
+  contentBody String?
+
+  // stripe
+  stripePaymentIntentId String?    @unique
+  stripeChargeId        String?
+  stripeCheckoutSessionId String?  @unique
+  paidAt                DateTime?
+  refundedAt            DateTime?
+  refundReason          String?
+
+  // lifecycle timestamps
+  acceptedAt   DateTime?
+  submittedAt  DateTime?
+  publishedAt  DateTime?
+  completedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customer       User           @relation("Customer", fields: [customerId], references: [id])
+  fulfiller      User           @relation("Fulfiller", fields: [fulfillerId], references: [id])
+  listing        Listing        @relation(fields: [listingId], references: [id])
+  dispute        Dispute?
+  messages       OrderMessage[]
+  ledgerEntries  LedgerEntry[]
 }
 
-// ─── Transaction ──────────────────────────────────────────────────────────────
+// ─── OrderMessage ─────────────────────────────────────────────────────────────
 
-model Transaction {
-  id              String        @id @default(cuid())
-  userId          String
-  orderId         String?       @unique
-  amount          Float
-  currency        String        @default("USD")
-  paymentStatus   PaymentStatus @default(PENDING)
-  stripePaymentId String?
-  description     String?
-  createdAt       DateTime      @default(now())
+model OrderMessage {
+  id        String   @id @default(cuid())
+  orderId   String
+  senderId  String
+  body      String
+  createdAt DateTime @default(now())
 
-  user  User   @relation(fields: [userId], references: [id])
-  order Order? @relation(fields: [orderId], references: [id])
+  order  Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sender User  @relation(fields: [senderId], references: [id])
+}
+
+// ─── Dispute ──────────────────────────────────────────────────────────────────
+
+model Dispute {
+  id           String        @id @default(cuid())
+  orderId      String        @unique
+  openedById   String
+  reason       String
+  status       DisputeStatus @default(OPEN)
+  resolution   String?
+  resolvedById String?
+  resolvedAt   DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  order      Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  openedBy   User  @relation("DisputeOpener", fields: [openedById], references: [id])
+  resolvedBy User? @relation("DisputeResolver", fields: [resolvedById], references: [id])
+}
+
+// ─── BankAccount ──────────────────────────────────────────────────────────────
+
+model BankAccount {
+  id            String   @id @default(cuid())
+  userId        String
+  label         String
+  accountName   String
+  accountNumber String?
+  routingNumber String?
+  iban          String?
+  swift         String?
+  bankName      String?
+  country       String?
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payouts Payout[]
+}
+
+// ─── Payout ───────────────────────────────────────────────────────────────────
+
+model Payout {
+  id              String       @id @default(cuid())
+  resellerId      String
+  bankAccountId   String?
+  amountCents     Int
+  status          PayoutStatus @default(REQUESTED)
+  // snapshot of bank account at request time (in case the live record changes)
+  bankSnapshot    Json
+  requestedAt     DateTime     @default(now())
+  approvedAt      DateTime?
+  paidAt          DateTime?
+  paidById        String?
+  reference       String?
+  notes           String?
+  rejectionReason String?
+
+  reseller    User          @relation(fields: [resellerId], references: [id])
+  bankAccount BankAccount?  @relation(fields: [bankAccountId], references: [id])
+  ledgerEntries LedgerEntry[]
+}
+
+// ─── LedgerEntry ──────────────────────────────────────────────────────────────
+
+// Every money movement creates a ledger row. The reseller's "available balance"
+// = sum of RESELLER_EARNING entries minus sum of PAYOUT entries.
+model LedgerEntry {
+  id          String          @id @default(cuid())
+  userId      String
+  type        LedgerEntryType
+  amountCents Int             // signed: positive = credit to user, negative = debit
+  orderId     String?
+  payoutId    String?
+  description String?
+  createdAt   DateTime        @default(now())
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order  Order?  @relation(fields: [orderId], references: [id])
+  payout Payout? @relation(fields: [payoutId], references: [id])
+
+  @@index([userId, type])
+  @@index([userId, createdAt])
+}
+
+// ─── Notification ─────────────────────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+}
+
+// ─── AuditLog ─────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  action     String
+  targetType String?
+  targetId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  actor User @relation(fields: [actorId], references: [id])
+
+  @@index([actorId, createdAt])
+  @@index([targetType, targetId])
+}
+
+// ─── Setting (key-value store) ────────────────────────────────────────────────
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
 }
 
 // ─── Blacklist ────────────────────────────────────────────────────────────────

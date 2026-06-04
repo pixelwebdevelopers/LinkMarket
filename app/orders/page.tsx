@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency, formatDate, getDomainFromUrl } from "@/lib/utils";
+import { formatDate, getDomainFromUrl } from "@/lib/utils";
 import { ShoppingCart } from "lucide-react";
 
 const statusVariant: Record<string, "default" | "info" | "warning" | "success" | "danger"> = {
-  PENDING: "warning",
+  PENDING_PAYMENT: "default",
+  PAID: "info",
   IN_PROGRESS: "info",
   CONTENT_NEEDED: "warning",
   SUBMITTED: "info",
@@ -15,10 +16,13 @@ const statusVariant: Record<string, "default" | "info" | "warning" | "success" |
   COMPLETED: "success",
   CANCELLED: "danger",
   REJECTED: "danger",
+  DISPUTED: "danger",
+  REFUNDED: "danger",
 };
 
 const statusLabel: Record<string, string> = {
-  PENDING: "Pending",
+  PENDING_PAYMENT: "Pending Payment",
+  PAID: "Paid",
   IN_PROGRESS: "In Progress",
   CONTENT_NEEDED: "Content Needed",
   SUBMITTED: "Submitted",
@@ -26,7 +30,13 @@ const statusLabel: Record<string, string> = {
   COMPLETED: "Completed",
   CANCELLED: "Cancelled",
   REJECTED: "Rejected",
+  DISPUTED: "Disputed",
+  REFUNDED: "Refunded",
 };
+
+function fmtCents(c: number) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(c / 100);
+}
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -91,7 +101,7 @@ export default function OrdersPage() {
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="font-bold text-zinc-900 dark:text-white">{formatCurrency(order.price)}</p>
+                    <p className="font-bold text-zinc-900 dark:text-white tabular-nums">{fmtCents(order.pricePaidCents)}</p>
                     {order.articleUrl && (
                       <span className="text-xs text-emerald-700 dark:text-emerald-400">Live ✓</span>
                     )}

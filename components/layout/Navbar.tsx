@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -29,9 +30,8 @@ export function Navbar() {
 
   const roleBadge: Record<string, string> = {
     ADMIN: "bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/20",
-    MANAGER: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20",
-    PUBLISHER: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20",
-    BUYER: "bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-300 dark:border-zinc-700",
+    RESELLER: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20",
+    CUSTOMER: "bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-300 dark:border-zinc-700",
   };
 
   const navLinks = [
@@ -40,8 +40,7 @@ export function Navbar() {
       { href: "/dashboard", label: "Dashboard" },
       { href: "/orders", label: "Orders" },
     ] : []),
-    ...(role === "PUBLISHER" ? [{ href: "/publisher", label: "My Sites" }] : []),
-    ...(role === "MANAGER" ? [{ href: "/admin", label: "Manager" }] : []),
+    ...(role === "RESELLER" ? [{ href: "/reseller", label: "My Sites" }] : []),
     ...(role === "ADMIN" ? [{ href: "/admin", label: "Admin" }] : []),
   ];
 
@@ -96,6 +95,7 @@ export function Navbar() {
           {/* Right */}
           <div className="hidden md:flex items-center gap-3 shrink-0">
             <ThemeToggle />
+            {session && <NotificationBell />}
             {session ? (
               <div className="relative">
                 <button
@@ -128,14 +128,19 @@ export function Navbar() {
                       {[
                         { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
                         { href: "/orders", label: "My Orders", icon: ShoppingCart },
-                        ...(role === "PUBLISHER" ? [{ href: "/publisher", label: "My Sites", icon: Globe }] : []),
-                        ...(role === "MANAGER" ? [
-                          { href: "/admin", label: "Manager Panel", icon: BarChart2 },
-                          { href: "/admin/metrics", label: "Update Metrics", icon: BarChart2 },
+                        ...(role === "RESELLER" ? [
+                          { href: "/reseller", label: "My Sites", icon: Globe },
+                          { href: "/reseller/earnings", label: "Earnings", icon: BarChart2 },
+                          { href: "/reseller/bank-accounts", label: "Bank Accounts", icon: BarChart2 },
                         ] : []),
                         ...(role === "ADMIN" ? [
                           { href: "/admin", label: "Admin Panel", icon: Shield },
+                          { href: "/admin/resellers", label: "Resellers", icon: BarChart2 },
+                          { href: "/admin/payouts", label: "Payouts", icon: BarChart2 },
+                          { href: "/admin/disputes", label: "Disputes", icon: BarChart2 },
                           { href: "/admin/metrics", label: "Update Metrics", icon: BarChart2 },
+                          { href: "/admin/audit", label: "Audit log", icon: BarChart2 },
+                          { href: "/admin/settings", label: "Settings", icon: BarChart2 },
                         ] : []),
                       ].map((item) => {
                         const Icon = item.icon;
@@ -178,6 +183,7 @@ export function Navbar() {
 
           {/* Mobile toggle */}
           <div className="md:hidden flex items-center gap-2">
+            {session && <NotificationBell />}
             <ThemeToggle />
           <button
             aria-label="Toggle menu"

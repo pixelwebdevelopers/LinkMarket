@@ -1,56 +1,79 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { requireAdmin, AuthError } from "@/lib/authz";
+import { logAudit } from "@/lib/audit";
+import { notify } from "@/lib/notifications";
 
-// GET all sites for metrics update
 export async function GET() {
-  const session = await auth();
-  if (!session?.user || !["ADMIN", "MANAGER"].includes(session.user.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  try {
+    await requireAdmin();
+    const sites = await db.site.findMany({
+      include: { metrics: true, owner: { select: { id: true, name: true, email: true, role: true } } },
+      orderBy: { createdAt: "desc" },
+    });
+    return NextResponse.json(sites);
+  } catch (err) {
+    if (err instanceof AuthError) return NextResponse.json({ error: err.message }, { status: err.status });
+    console.error(err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
-
-  const sites = await db.site.findMany({
-    include: { metrics: true, publisher: { include: { user: true } } },
-    orderBy: { createdAt: "desc" },
-  });
-
-  return NextResponse.json(sites);
 }
 
-// PATCH: Update metrics for a site
 export async function PATCH(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user || !["ADMIN", "MANAGER"].includes(session.user.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  try {
+    const admin = await requireAdmin();
+    const { siteId, domainRating, domainAuthority, organicTraffic, referringDomains, spamScore } =
+      await req.json();
+    if (!siteId) return NextResponse.json({ error: "siteId required" }, { status: 400 });
+
+    const site = await db.site.findUnique({ where: { id: siteId }, select: { ownerId: true } });
+    if (!site) return NextResponse.json({ error: "Site not found" }, { status: 404 });
+
+    const metrics = await db.siteMetrics.upsert({
+      where: { siteId },
+      create: {
+        siteId,
+        domainRating: domainRating ?? 0,
+        domainAuthority: domainAuthority ?? 0,
+        organicTraffic: organicTraffic ?? 0,
+        referringDomains: referringDomains ?? 0,
+        spamScore: spamScore ?? 0,
+        updatedById: admin.id,
+        updatedAt: new Date(),
+      },
+      update: {
+        domainRating: domainRating ?? 0,
+        domainAuthority: domainAuthority ?? 0,
+        organicTraffic: organicTraffic ?? 0,
+        referringDomains: referringDomains ?? 0,
+        spamScore: spamScore ?? 0,
+        updatedById: admin.id,
+        updatedAt: new Date(),
+      },
+    });
+
+    await logAudit({
+      actorId: admin.id,
+      action: "site.metrics_updated",
+      targetType: "Site",
+      targetId: siteId,
+      metadata: { domainRating, domainAuthority, organicTraffic, referringDomains, spamScore },
+    });
+
+    if (site.ownerId !== admin.id) {
+      await notify({
+        userId: site.ownerId,
+        type: "SITE_METRIC_UPDATED",
+        title: "Your site's metrics were updated",
+        body: "An admin refreshed the DR/DA/traffic numbers for one of your sites.",
+        link: "/reseller",
+      });
+    }
+
+    return NextResponse.json(metrics);
+  } catch (err) {
+    if (err instanceof AuthError) return NextResponse.json({ error: err.message }, { status: err.status });
+    console.error(err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
-
-  const { siteId, domainRating, domainAuthority, organicTraffic, referringDomains, spamScore } =
-    await req.json();
-
-  if (!siteId) return NextResponse.json({ error: "siteId required" }, { status: 400 });
-
-  const metrics = await db.siteMetrics.upsert({
-    where: { siteId },
-    create: {
-      siteId,
-      domainRating: domainRating ?? 0,
-      domainAuthority: domainAuthority ?? 0,
-      organicTraffic: organicTraffic ?? 0,
-      referringDomains: referringDomains ?? 0,
-      spamScore: spamScore ?? 0,
-      updatedById: session.user.id,
-      updatedAt: new Date(),
-    },
-    update: {
-      domainRating: domainRating ?? 0,
-      domainAuthority: domainAuthority ?? 0,
-      organicTraffic: organicTraffic ?? 0,
-      referringDomains: referringDomains ?? 0,
-      spamScore: spamScore ?? 0,
-      updatedById: session.user.id,
-      updatedAt: new Date(),
-    },
-  });
-
-  return NextResponse.json(metrics);
 }
