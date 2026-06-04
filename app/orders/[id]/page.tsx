@@ -288,8 +288,15 @@ export default function OrderDetailPage() {
                   </Button>
                 )}
                 {order.status === "PAID" && (
-                  <Button size="sm" variant="danger" onClick={() => updateStatus("REJECTED")} loading={updating}>
-                    Reject
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    onClick={() => {
+                      if (confirm("Reject this order? The customer will be refunded in full.")) updateStatus("REJECTED");
+                    }}
+                    loading={updating}
+                  >
+                    Reject &amp; refund
                   </Button>
                 )}
               </div>

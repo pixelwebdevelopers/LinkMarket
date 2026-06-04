@@ -54,8 +54,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const order = dispute.order;
 
     if (action === "resolve_customer") {
-      // Issue Stripe refund (if configured + payment intent exists)
-      let refunded = false;
+      // Try Stripe refund (no-op in dev without keys).
       if (isStripeConfigured() && order.stripePaymentIntentId) {
         try {
           await stripe.refunds.create({
@@ -63,9 +62,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             reason: "requested_by_customer",
             metadata: { orderId: order.id, disputeId: id },
           });
-          refunded = true;
-          // The webhook will mark the order REFUNDED + write reverse ledger entries.
-          // But to handle the case where webhook is delayed/missing, we update immediately too.
         } catch (err: any) {
           console.error("[dispute] stripe refund failed", err);
           return NextResponse.json(
@@ -75,29 +71,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         }
       }
 
-      // If Stripe didn't run (not configured / no payment intent), still mark refunded manually.
-      if (!refunded) {
-        await db.$transaction(async (tx) => {
-          await tx.order.update({
-            where: { id: order.id },
-            data: { status: "REFUNDED", refundedAt: new Date(), refundReason: "dispute_resolved_customer" },
-          });
-          await writeOrderRefundedLedger(order.id, order.pricePaidCents, tx);
-        });
-      } else {
-        // Webhook may not have fired yet, but mark our state to REFUNDED proactively if not already
-        await db.order.updateMany({
-          where: { id: order.id, refundedAt: null },
-          data: { status: "REFUNDED", refundedAt: new Date(), refundReason: "dispute_resolved_customer" },
-        });
-        // If webhook already wrote ledger entries we don't duplicate; otherwise write now.
-        const existingRefund = await db.ledgerEntry.findFirst({
-          where: { orderId: order.id, type: "REFUND" },
-        });
-        if (!existingRefund) {
-          await writeOrderRefundedLedger(order.id, order.pricePaidCents);
-        }
-      }
+      // Mark REFUNDED (atomic — only the first call wins) and write ledger (idempotent).
+      // Webhook may run later and finds the state already set; its writeOrderRefundedLedger
+      // call will be a no-op due to existing-entry checks.
+      await db.order.updateMany({
+        where: { id: order.id, refundedAt: null },
+        data: { status: "REFUNDED", refundedAt: new Date(), refundReason: "dispute_resolved_customer" },
+      });
+      await writeOrderRefundedLedger(order.id, order.pricePaidCents);
 
       const updated = await db.dispute.update({
         where: { id },

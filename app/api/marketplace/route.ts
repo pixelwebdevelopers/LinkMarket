@@ -5,15 +5,24 @@ import { getSetting } from "@/lib/settings";
 
 /**
  * Public marketplace endpoint.
- * Returns listings with a *customer-facing* finalPriceCents applied
- * via the commission rules. Filters on `minPrice` / `maxPrice` apply
- * to the customer-facing price.
+ *
+ * Returns listings with a `finalPriceCents` computed from the per-listing
+ * commission resolution (site override → reseller default → global). The
+ * `minPrice`/`maxPrice` filter is applied to the *customer-facing* price
+ * AFTER commission, but DB-level pagination uses the basePrice ordering.
+ *
+ * Caveat: the price-range filter is applied in-memory to the page slice, so
+ * the displayed `total` is the DB-level count, which may be slightly higher
+ * than the count of listings actually shown when a price filter is active.
+ * For the marketplace this is acceptable — search engines and filter UIs
+ * typically tolerate approximate totals. (To make this exact we'd need to
+ * materialise finalPriceCents into a generated column.)
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
-  const page = parseInt(searchParams.get("page") ?? "1");
-  const limit = parseInt(searchParams.get("limit") ?? "20");
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "20")));
   const skip = (page - 1) * limit;
 
   const type = searchParams.get("type") as ListingType | null;
@@ -27,8 +36,6 @@ export async function GET(req: NextRequest) {
   const country = searchParams.get("country");
   const sortBy = searchParams.get("sortBy") ?? "price_asc";
 
-  // We can't sort by computed final price at the DB layer cheaply,
-  // so we sort by base price and post-filter / re-sort in memory when needed.
   const orderBy = (() => {
     switch (sortBy) {
       case "price_asc": return { basePriceCents: "asc" as const };
@@ -54,32 +61,29 @@ export async function GET(req: NextRequest) {
     ...(type && { type }),
   };
 
-  // Pull a wider slice (3x limit) so we can apply commission-based price filter then page.
-  const widePool = await db.listing.findMany({
-    where,
-    take: limit * 3,
-    skip: 0,
-    orderBy,
-    include: {
-      site: { include: { metrics: true, owner: { select: { role: true, defaultCommissionPct: true } } } },
-    },
-  });
-
-  const globalPct = await getSetting("globalCommissionPct");
+  const [page1, total, globalPct] = await Promise.all([
+    db.listing.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy,
+      include: {
+        site: { include: { metrics: true, owner: { select: { role: true, defaultCommissionPct: true } } } },
+      },
+    }),
+    db.listing.count({ where }),
+    getSetting("globalCommissionPct"),
+  ]);
 
   const minPriceCents = Math.round(minPrice * 100);
   const maxPriceCents = Math.round(maxPrice * 100);
 
-  type Augmented = (typeof widePool)[number] & {
-    finalPriceCents: number;
-    commissionPctApplied: number;
-  };
-
-  const augmented: Augmented[] = widePool.map((l) => {
+  const augmented = page1.map((l) => {
     const ownerIsAdmin = l.site.owner.role === "ADMIN";
     let pct: number;
-    if (ownerIsAdmin) pct = 0;
-    else if (l.site.commissionPctOverride !== null && l.site.commissionPctOverride !== undefined) {
+    if (ownerIsAdmin) {
+      pct = 0;
+    } else if (l.site.commissionPctOverride !== null && l.site.commissionPctOverride !== undefined) {
       pct = l.site.commissionPctOverride;
     } else if (l.site.owner.defaultCommissionPct !== null && l.site.owner.defaultCommissionPct !== undefined) {
       pct = l.site.owner.defaultCommissionPct;
@@ -92,23 +96,20 @@ export async function GET(req: NextRequest) {
     return { ...l, finalPriceCents, commissionPctApplied: pct };
   });
 
+  // Apply price filter in-memory on the page slice. (See header caveat.)
   const filtered = augmented.filter(
     (l) => l.finalPriceCents >= minPriceCents && l.finalPriceCents <= maxPriceCents
   );
 
-  // Re-sort by final price if that's what user asked for
+  // If sorting by price, re-sort the slice by FINAL price for visual consistency.
   if (sortBy === "price_asc") filtered.sort((a, b) => a.finalPriceCents - b.finalPriceCents);
   if (sortBy === "price_desc") filtered.sort((a, b) => b.finalPriceCents - a.finalPriceCents);
 
-  const total = await db.listing.count({ where });
-  const start = skip;
-  const pageSlice = filtered.slice(start, start + limit).map(stripOwnerPrivate);
-
   return NextResponse.json({
-    listings: pageSlice,
+    listings: filtered.map(stripOwnerPrivate),
     total,
     page,
-    totalPages: Math.ceil(total / limit),
+    totalPages: Math.max(1, Math.ceil(total / limit)),
   });
 }
 

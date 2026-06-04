@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { requireUser, AuthError } from "@/lib/authz";
 import { notify } from "@/lib/notifications";
 import { logAudit } from "@/lib/audit";
+import { writeOrderCompletedLedger, writeOrderRefundedLedger } from "@/lib/ledger";
+import { stripe, isStripeConfigured } from "@/lib/stripe";
 import type { OrderStatus } from "@prisma/client";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -38,19 +40,23 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 // State transitions allowed per role.
-// Status order in the happy path: PAID -> IN_PROGRESS -> SUBMITTED -> PUBLISHED -> COMPLETED
+// Happy path: PAID -> IN_PROGRESS -> SUBMITTED -> PUBLISHED -> COMPLETED
+// DISPUTED is intentionally NOT in any allowedNext — disputes must go through
+// /api/orders/[id]/dispute which creates a Dispute row alongside the status change.
+// REFUNDED is also not directly reachable — it's set by Stripe webhooks or by
+// auto-refund paths (REJECTED from PAID, dispute resolution for customer).
 const transitions: Record<OrderStatus, { allowedNext: OrderStatus[]; roles: ("ADMIN" | "RESELLER" | "CUSTOMER" | "FULFILLER")[] }> = {
   PENDING_PAYMENT: { allowedNext: ["CANCELLED"], roles: ["CUSTOMER", "ADMIN"] },
-  PAID: { allowedNext: ["IN_PROGRESS", "CONTENT_NEEDED", "REJECTED"], roles: ["FULFILLER", "ADMIN"] },
-  IN_PROGRESS: { allowedNext: ["SUBMITTED", "CONTENT_NEEDED"], roles: ["FULFILLER", "ADMIN"] },
-  CONTENT_NEEDED: { allowedNext: ["IN_PROGRESS", "SUBMITTED"], roles: ["FULFILLER", "ADMIN"] },
-  SUBMITTED: { allowedNext: ["PUBLISHED", "IN_PROGRESS"], roles: ["FULFILLER", "ADMIN"] },
-  PUBLISHED: { allowedNext: ["COMPLETED", "DISPUTED"], roles: ["CUSTOMER", "ADMIN"] },
-  COMPLETED: { allowedNext: [], roles: [] },
-  CANCELLED: { allowedNext: [], roles: [] },
-  REJECTED: { allowedNext: [], roles: [] },
-  DISPUTED: { allowedNext: [], roles: [] },
-  REFUNDED: { allowedNext: [], roles: [] },
+  PAID:            { allowedNext: ["IN_PROGRESS", "CONTENT_NEEDED", "REJECTED"], roles: ["FULFILLER", "ADMIN"] },
+  IN_PROGRESS:     { allowedNext: ["SUBMITTED", "CONTENT_NEEDED"], roles: ["FULFILLER", "ADMIN"] },
+  CONTENT_NEEDED:  { allowedNext: ["IN_PROGRESS", "SUBMITTED"], roles: ["FULFILLER", "ADMIN"] },
+  SUBMITTED:       { allowedNext: ["PUBLISHED", "IN_PROGRESS"], roles: ["FULFILLER", "ADMIN"] },
+  PUBLISHED:       { allowedNext: ["COMPLETED"], roles: ["CUSTOMER", "ADMIN"] },
+  COMPLETED:       { allowedNext: [], roles: [] },
+  CANCELLED:       { allowedNext: [], roles: [] },
+  REJECTED:        { allowedNext: [], roles: [] },
+  DISPUTED:        { allowedNext: [], roles: [] },
+  REFUNDED:        { allowedNext: [], roles: [] },
 };
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -80,6 +86,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (targetUrl !== undefined && (isCustomer || isAdmin)) dataToUpdate.targetUrl = targetUrl;
     if (articleUrl !== undefined && (isFulfiller || isAdmin)) dataToUpdate.articleUrl = articleUrl;
 
+    // ───── status transitions ──────────────────────────────────────────────
+    let postCommit: (() => Promise<void>) | null = null;
+
     if (status) {
       const rule = transitions[order.status as OrderStatus];
       if (!rule.allowedNext.includes(status)) {
@@ -99,6 +108,47 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (status === "SUBMITTED") dataToUpdate.submittedAt = new Date();
       if (status === "PUBLISHED") dataToUpdate.publishedAt = new Date();
       if (status === "COMPLETED") dataToUpdate.completedAt = new Date();
+
+      // ── REJECTED from PAID ─────────────────────────────────────────────
+      // The fulfiller is declining a paid order. Customer must be refunded —
+      // we issue the Stripe refund here and mark REFUNDED (overriding the REJECTED
+      // status), so funds get back to the customer instead of being stuck.
+      if (status === "REJECTED" && order.status === "PAID") {
+        if (isStripeConfigured() && order.stripePaymentIntentId) {
+          try {
+            await stripe.refunds.create({
+              payment_intent: order.stripePaymentIntentId,
+              reason: "requested_by_customer",
+              metadata: { orderId: order.id, reason: "fulfiller_rejected" },
+            });
+          } catch (err: any) {
+            console.error("[order.reject] stripe refund failed", err);
+            return NextResponse.json(
+              { error: `Stripe refund failed: ${err.message ?? "unknown"}` },
+              { status: 502 }
+            );
+          }
+        }
+        // Mark REFUNDED in DB regardless of whether Stripe ran (no-Stripe dev mode
+        // still needs accounting). Also write the ledger directly — it's idempotent,
+        // so when the webhook fires later it'll no-op.
+        dataToUpdate.status = "REFUNDED";
+        dataToUpdate.refundedAt = new Date();
+        dataToUpdate.refundReason = isStripeConfigured() && order.stripePaymentIntentId
+          ? "fulfiller_rejected"
+          : "fulfiller_rejected_no_stripe";
+        postCommit = async () => {
+          await writeOrderRefundedLedger(order.id, order.pricePaidCents);
+        };
+      }
+
+      // ── COMPLETED ──────────────────────────────────────────────────────
+      // Credit the reseller's earning into their ledger.
+      if (status === "COMPLETED") {
+        postCommit = async () => {
+          await writeOrderCompletedLedger(order.id);
+        };
+      }
     }
 
     if (Object.keys(dataToUpdate).length === 0) {
@@ -106,6 +156,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     const updated = await db.order.update({ where: { id }, data: dataToUpdate });
+    if (postCommit) await postCommit();
 
     if (status) {
       await logAudit({
@@ -113,17 +164,26 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         action: `order.status_changed`,
         targetType: "Order",
         targetId: id,
-        metadata: { from: order.status, to: status },
+        metadata: { from: order.status, to: updated.status },
       });
-      // Notify the other party
       const otherUserId = isCustomer ? order.fulfillerId : order.customerId;
       if (otherUserId && otherUserId !== user.id) {
         await notify({
           userId: otherUserId,
           type: "ORDER_STATUS_CHANGED",
-          title: `Order status: ${String(status).replace("_", " ").toLowerCase()}`,
-          body: `Order ${id.slice(-8).toUpperCase()} is now ${status}.`,
+          title: `Order ${String(updated.status).replace("_", " ").toLowerCase()}`,
+          body: `Order ${id.slice(-8).toUpperCase()} is now ${updated.status}.`,
           link: `/orders/${id}`,
+        });
+      }
+      if (updated.status === "REFUNDED" && order.customerId !== user.id) {
+        await notify({
+          userId: order.customerId,
+          type: "ORDER_STATUS_CHANGED",
+          title: "Order refunded",
+          body: `Your order ${id.slice(-8).toUpperCase()} was rejected by the publisher. Full refund has been issued.`,
+          link: `/orders/${id}`,
+          email: true,
         });
       }
     }

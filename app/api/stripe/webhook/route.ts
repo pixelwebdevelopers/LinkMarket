@@ -76,32 +76,33 @@ async function handlePaymentIntentSucceeded(pi: Stripe.PaymentIntent) {
     console.warn("[stripe webhook] payment_intent.succeeded missing orderId metadata");
     return;
   }
-  const order = await db.order.findUnique({
-    where: { id: orderId },
-    include: { listing: { include: { site: true } }, customer: true, fulfiller: true },
-  });
-  if (!order) {
-    console.warn("[stripe webhook] order not found for paid intent", orderId);
-    return;
-  }
-  if (order.status !== "PENDING_PAYMENT") {
-    // Idempotent: already processed
-    return;
-  }
 
   const chargeId =
     typeof pi.latest_charge === "string" ? pi.latest_charge : pi.latest_charge?.id ?? null;
 
+  // Atomic claim: only the call that flips PENDING_PAYMENT -> PAID proceeds.
+  // Concurrent/duplicate webhook deliveries return updated.count === 0 and exit.
+  const claim = await db.order.updateMany({
+    where: { id: orderId, status: "PENDING_PAYMENT" },
+    data: {
+      status: "PAID",
+      paidAt: new Date(),
+      stripePaymentIntentId: pi.id,
+      stripeChargeId: chargeId,
+    },
+  });
+  if (claim.count === 0) {
+    // Already processed (or order not found / in another terminal state).
+    return;
+  }
+
+  const order = await db.order.findUnique({
+    where: { id: orderId },
+    include: { listing: { include: { site: true } }, customer: true, fulfiller: true },
+  });
+  if (!order) return;
+
   await db.$transaction(async (tx) => {
-    await tx.order.update({
-      where: { id: order.id },
-      data: {
-        status: "PAID",
-        paidAt: new Date(),
-        stripePaymentIntentId: pi.id,
-        stripeChargeId: chargeId,
-      },
-    });
     await writeOrderPaidLedger(order.id, tx);
   });
 
@@ -167,21 +168,27 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     include: { customer: true, fulfiller: true, listing: { include: { site: true } } },
   });
   if (!order) return;
-  if (order.refundedAt) return; // idempotent
 
   const refundCents = charge.amount_refunded ?? order.pricePaidCents;
 
-  await db.$transaction(async (tx) => {
-    await tx.order.update({
-      where: { id: order.id },
-      data: {
-        status: "REFUNDED",
-        refundedAt: new Date(),
-        refundReason: charge.refunds?.data?.[0]?.reason ?? "stripe.refund",
-      },
-    });
-    await writeOrderRefundedLedger(order.id, refundCents, tx);
+  // Atomic claim of refundedAt — only one webhook call sets it. Other concurrent
+  // / duplicate deliveries get count=0 and skip the notification. Ledger writing
+  // is itself idempotent (checks for existing REFUND entries per order), so we
+  // call it unconditionally — this also covers the case where some upstream code
+  // (e.g. order PATCH or dispute resolve) marked refundedAt without writing the
+  // ledger.
+  const claim = await db.order.updateMany({
+    where: { id: order.id, refundedAt: null },
+    data: {
+      status: "REFUNDED",
+      refundedAt: new Date(),
+      refundReason: charge.refunds?.data?.[0]?.reason ?? "stripe.refund",
+    },
   });
+  await writeOrderRefundedLedger(order.id, refundCents);
+
+  // Only fire notifications the first time we observe the refund.
+  if (claim.count === 0) return;
 
   await notify({
     userId: order.customerId,

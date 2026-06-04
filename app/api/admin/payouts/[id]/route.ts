@@ -98,7 +98,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           data: {
             userId: payout.resellerId,
             type: "PAYOUT",
-            amountCents: -payout.amountCents, // reverses earlier positive
+            amountCents: payout.amountCents, // positive — reverses earlier negative debit
             payoutId: payout.id,
             description: `Payout request rejected — funds restored`,
           },

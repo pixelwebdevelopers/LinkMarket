@@ -2,26 +2,40 @@ import { db } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
 
 /**
- * Compute a reseller's available payout balance in cents.
- * Available = sum of RESELLER_EARNING entries from orders that are COMPLETED
- *           - sum of PAYOUT entries (already paid out or in-flight)
+ * Ledger semantics
+ * ─────────────────
+ * Every entry is a signed amount on a user account.
+ *   positive = credit (money owed TO the user)
+ *   negative = debit  (money owed BY the user / reduces balance)
  *
- * In-flight = PayoutStatus REQUESTED or APPROVED (the ledger entry was already written
- * when the payout was requested, so it correctly reduces availability).
+ * Reseller's available payout balance =
+ *   sum of ALL entries on their account (RESELLER_EARNING + REFUND + PAYOUT)
+ *
+ * Sign conventions for each LedgerEntryType:
+ *   RESELLER_EARNING : + on COMPLETED          (reseller earned their slice)
+ *   REFUND           : - on customer refund    (claws back what was credited)
+ *   PAYOUT           : - on payout REQUESTED   (reserves funds; balance drops)
+ *                    : + on payout REJECTED    (returns funds; balance restored)
+ *   ORDER_GROSS      : + on admin's account when payment lands (gross revenue)
+ *
+ * Earnings are credited only when the order COMPLETES (customer marks Completed
+ * or auto-completes). Before that, the money sits as "pending" — visible but not
+ * spendable. This prevents resellers from cashing out before delivering.
  */
+
 export async function getResellerBalanceCents(resellerId: string): Promise<{
   availableCents: number;
   lifetimeEarnedCents: number;
   pendingCents: number; // earnings from orders not yet COMPLETED
   paidOutCents: number;
 }> {
-  const [earnings, payouts, pending] = await Promise.all([
+  const [allEntries, earningsOnly, pending, paidPayouts] = await Promise.all([
     db.ledgerEntry.aggregate({
-      where: { userId: resellerId, type: "RESELLER_EARNING" },
+      where: { userId: resellerId, type: { in: ["RESELLER_EARNING", "REFUND", "PAYOUT"] } },
       _sum: { amountCents: true },
     }),
     db.ledgerEntry.aggregate({
-      where: { userId: resellerId, type: "PAYOUT" },
+      where: { userId: resellerId, type: "RESELLER_EARNING" },
       _sum: { amountCents: true },
     }),
     db.order.aggregate({
@@ -31,41 +45,51 @@ export async function getResellerBalanceCents(resellerId: string): Promise<{
       },
       _sum: { resellerEarningCents: true },
     }),
+    db.payout.aggregate({
+      where: { resellerId, status: "PAID" },
+      _sum: { amountCents: true },
+    }),
   ]);
 
-  const lifetimeEarnedCents = earnings._sum.amountCents ?? 0;
-  // PAYOUT entries are stored as positive amounts (the credit-side); availability subtracts them
-  const paidOutCents = payouts._sum.amountCents ?? 0;
-  const pendingCents = pending._sum.resellerEarningCents ?? 0;
-
   return {
-    availableCents: lifetimeEarnedCents - paidOutCents,
-    lifetimeEarnedCents,
-    pendingCents,
-    paidOutCents,
+    // Available = sum of every signed entry on this reseller's account
+    availableCents: allEntries._sum.amountCents ?? 0,
+    // Lifetime credits earned (positive entries only)
+    lifetimeEarnedCents: earningsOnly._sum.amountCents ?? 0,
+    // Money locked in in-flight orders (not yet completed)
+    pendingCents: pending._sum.resellerEarningCents ?? 0,
+    // Successfully paid-out total (from Payout records, not ledger)
+    paidOutCents: paidPayouts._sum.amountCents ?? 0,
   };
 }
 
 /**
- * Write the standard ledger entries for an order that just got paid.
- * - Admin gets ORDER_GROSS (full amount captured to admin's Stripe)
- * - If reseller-owned: ADMIN_COMMISSION (admin's net) + RESELLER_EARNING
- * - If admin-owned: just the gross is admin's net (no separate commission row needed)
+ * Called when an order's payment is captured (status PENDING_PAYMENT -> PAID).
+ * Only writes ORDER_GROSS on the admin account so we can track total gross
+ * revenue landing in Stripe. Reseller earnings are NOT credited yet — they're
+ * pending until COMPLETED.
  */
 export async function writeOrderPaidLedger(orderId: string, tx?: Prisma.TransactionClient): Promise<void> {
   const client = tx ?? db;
   const order = await client.order.findUnique({
     where: { id: orderId },
-    include: { listing: { include: { site: { include: { owner: true } } } } },
+    select: { id: true, pricePaidCents: true },
   });
   if (!order) throw new Error(`Order ${orderId} not found`);
 
   const admin = await client.user.findFirst({ where: { role: "ADMIN" }, select: { id: true } });
-  if (!admin) throw new Error("No admin user exists — cannot post ORDER_GROSS ledger entry");
+  if (!admin) {
+    console.error("[ledger] no admin user — cannot post ORDER_GROSS for", orderId);
+    return;
+  }
 
-  const ownerIsAdmin = order.listing.site.owner.role === "ADMIN";
+  // Idempotent: skip if ORDER_GROSS already exists for this order
+  const existing = await client.ledgerEntry.findFirst({
+    where: { orderId: order.id, type: "ORDER_GROSS" },
+    select: { id: true },
+  });
+  if (existing) return;
 
-  // 1) Always record the gross payment as a credit to the admin (money landed in admin's Stripe).
   await client.ledgerEntry.create({
     data: {
       userId: admin.id,
@@ -75,63 +99,98 @@ export async function writeOrderPaidLedger(orderId: string, tx?: Prisma.Transact
       description: `Order ${order.id} paid by customer`,
     },
   });
-
-  if (!ownerIsAdmin) {
-    // 2a) Admin's commission slice from a reseller's order
-    if (order.adminCommissionCents > 0) {
-      await client.ledgerEntry.create({
-        data: {
-          userId: admin.id,
-          type: "ADMIN_COMMISSION",
-          amountCents: order.adminCommissionCents,
-          orderId: order.id,
-          description: `Commission on order ${order.id}`,
-        },
-      });
-    }
-    // 2b) Reseller's earning slice — this is what accrues toward their payout balance
-    if (order.resellerEarningCents > 0) {
-      await client.ledgerEntry.create({
-        data: {
-          userId: order.fulfillerId,
-          type: "RESELLER_EARNING",
-          amountCents: order.resellerEarningCents,
-          orderId: order.id,
-          description: `Earning from order ${order.id}`,
-        },
-      });
-    }
-  }
 }
 
-/** Write a REFUND ledger entry, reversing what was credited. */
-export async function writeOrderRefundedLedger(orderId: string, refundCents: number, tx?: Prisma.TransactionClient): Promise<void> {
+/**
+ * Called when an order COMPLETES (customer marks completed or auto-complete).
+ * Credits the reseller's earning slice. Idempotent.
+ *
+ * Admin-owned listings: nothing extra to write — admin already got ORDER_GROSS
+ * and the order is fulfilled by themselves.
+ */
+export async function writeOrderCompletedLedger(orderId: string, tx?: Prisma.TransactionClient): Promise<void> {
   const client = tx ?? db;
   const order = await client.order.findUnique({
     where: { id: orderId },
-    include: { listing: { include: { site: { include: { owner: true } } } } },
+    include: { listing: { include: { site: { include: { owner: { select: { role: true } } } } } } },
+  });
+  if (!order) throw new Error(`Order ${orderId} not found`);
+
+  const ownerIsAdmin = order.listing.site.owner.role === "ADMIN";
+  if (ownerIsAdmin || order.resellerEarningCents <= 0) return;
+
+  const existing = await client.ledgerEntry.findFirst({
+    where: { orderId: order.id, userId: order.fulfillerId, type: "RESELLER_EARNING" },
+    select: { id: true },
+  });
+  if (existing) return;
+
+  await client.ledgerEntry.create({
+    data: {
+      userId: order.fulfillerId,
+      type: "RESELLER_EARNING",
+      amountCents: order.resellerEarningCents,
+      orderId: order.id,
+      description: `Earning from completed order ${order.id}`,
+    },
+  });
+}
+
+/**
+ * Called when an order is refunded (any reason). Writes:
+ *   - REFUND on admin = -refundCents (reverses ORDER_GROSS)
+ *   - REFUND on reseller = -resellerEarningCents (ONLY if the earning was
+ *     previously credited; if the order never completed there's nothing to reverse)
+ * Idempotent.
+ */
+export async function writeOrderRefundedLedger(
+  orderId: string,
+  refundCents: number,
+  tx?: Prisma.TransactionClient
+): Promise<void> {
+  const client = tx ?? db;
+  const order = await client.order.findUnique({
+    where: { id: orderId },
+    include: { listing: { include: { site: { include: { owner: { select: { role: true } } } } } } },
   });
   if (!order) throw new Error(`Order ${orderId} not found`);
 
   const admin = await client.user.findFirst({ where: { role: "ADMIN" }, select: { id: true } });
-  if (!admin) throw new Error("No admin user exists — cannot post REFUND ledger entry");
+  if (!admin) {
+    console.error("[ledger] no admin — cannot post REFUND for", orderId);
+    return;
+  }
+
+  // Idempotent on admin's side
+  const existingAdminRefund = await client.ledgerEntry.findFirst({
+    where: { orderId: order.id, userId: admin.id, type: "REFUND" },
+    select: { id: true },
+  });
+  if (!existingAdminRefund) {
+    await client.ledgerEntry.create({
+      data: {
+        userId: admin.id,
+        type: "REFUND",
+        amountCents: -refundCents,
+        orderId: order.id,
+        description: `Refund on order ${order.id}`,
+      },
+    });
+  }
 
   const ownerIsAdmin = order.listing.site.owner.role === "ADMIN";
-
-  // Negative entry against admin's gross
-  await client.ledgerEntry.create({
-    data: {
-      userId: admin.id,
-      type: "REFUND",
-      amountCents: -refundCents,
-      orderId: order.id,
-      description: `Refund on order ${order.id}`,
-    },
-  });
-
-  if (!ownerIsAdmin) {
-    // Reverse the reseller earning so it no longer counts toward payout balance
-    if (order.resellerEarningCents > 0) {
+  if (!ownerIsAdmin && order.resellerEarningCents > 0) {
+    // Only reverse the reseller's earning if it was actually credited (i.e. order
+    // had previously completed). If they were never credited, no reversal needed.
+    const existingEarning = await client.ledgerEntry.findFirst({
+      where: { orderId: order.id, userId: order.fulfillerId, type: "RESELLER_EARNING" },
+      select: { id: true },
+    });
+    const existingResellerRefund = await client.ledgerEntry.findFirst({
+      where: { orderId: order.id, userId: order.fulfillerId, type: "REFUND" },
+      select: { id: true },
+    });
+    if (existingEarning && !existingResellerRefund) {
       await client.ledgerEntry.create({
         data: {
           userId: order.fulfillerId,
