@@ -58,7 +58,7 @@ export function ListingCard({ listing }: ListingCardProps) {
     <article
       className="group bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl px-4 sm:px-5 py-4 hover:border-indigo-500/40 hover:bg-zinc-100/70 dark:hover:bg-zinc-900/70 hover:shadow-lg hover:shadow-indigo-500/5 transition-all duration-200
                  flex flex-col gap-3
-                 md:grid md:grid-cols-[minmax(0,1fr)_repeat(4,64px)_minmax(96px,auto)_auto] md:gap-5 md:items-center"
+                 md:grid md:grid-cols-[minmax(0,1fr)_repeat(4,64px)_110px_100px] md:gap-5 md:items-center"
     >
       {/* Site column */}
       <div className="flex items-center gap-3 min-w-0">
@@ -126,7 +126,7 @@ export function ListingCard({ listing }: ListingCardProps) {
 
       {/* CTA */}
       <Link href={`/marketplace/${listing.id}`} className="block">
-        <Button size="sm" className="w-full md:w-auto gap-1.5">
+        <Button size="sm" className="w-full gap-1.5">
           View <ArrowRight className="h-3.5 w-3.5" />
         </Button>
       </Link>

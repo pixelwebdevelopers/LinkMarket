@@ -5,17 +5,52 @@ import { logAudit } from "@/lib/audit";
 import { notify } from "@/lib/notifications";
 import type { SiteStatus } from "@prisma/client";
 
+/** GET — full site detail (for edit modal pre-population). */
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    await requireAdmin();
+    const { id } = await params;
+    const site = await db.site.findUnique({
+      where: { id },
+      include: {
+        metrics: true,
+        listings: true,
+        owner: { select: { id: true, name: true, email: true, role: true } },
+        _count: { select: { listings: true } },
+      },
+    });
+    if (!site) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(site);
+  } catch (err) {
+    if (err instanceof AuthError) return NextResponse.json({ error: err.message }, { status: err.status });
+    console.error(err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+
+const EDITABLE_FIELDS = [
+  "name",
+  "url",
+  "description",
+  "language",
+  "country",
+  "niche",
+  "exampleUrl",
+] as const;
+
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const admin = await requireAdmin();
     const { id } = await params;
-    const { status, rejectionReason, commissionPctOverride } = await req.json();
+    const body = await req.json();
+    const { status, rejectionReason, commissionPctOverride, ...rest } = body;
 
     const site = await db.site.findUnique({ where: { id }, select: { ownerId: true, name: true } });
     if (!site) return NextResponse.json({ error: "Site not found" }, { status: 404 });
 
     const dataToUpdate: Record<string, unknown> = {};
 
+    // Status transitions
     if (status) {
       const valid: SiteStatus[] = ["APPROVED", "REJECTED", "PENDING", "SUSPENDED"];
       if (!valid.includes(status)) return NextResponse.json({ error: "Invalid status" }, { status: 400 });
@@ -30,6 +65,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
 
+    // Commission override
     if (commissionPctOverride !== undefined) {
       if (commissionPctOverride === null) dataToUpdate.commissionPctOverride = null;
       else {
@@ -40,6 +76,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         dataToUpdate.commissionPctOverride = v;
       }
     }
+
+    // Generic field edits (name, url, niche, language, country, description, exampleUrl)
+    for (const key of EDITABLE_FIELDS) {
+      if (rest[key] !== undefined) {
+        if (key === "url" && typeof rest.url === "string" && rest.url.trim()) {
+          // Check for unique URL conflict
+          const dup = await db.site.findFirst({
+            where: { url: rest.url.trim(), NOT: { id } },
+            select: { id: true },
+          });
+          if (dup) return NextResponse.json({ error: "Another site already uses that URL" }, { status: 409 });
+        }
+        dataToUpdate[key] = typeof rest[key] === "string" ? rest[key].trim() || null : rest[key];
+      }
+    }
+    // Required fields can't be set to empty
+    if (dataToUpdate.url === null) return NextResponse.json({ error: "URL is required" }, { status: 400 });
+    if (dataToUpdate.name === null) return NextResponse.json({ error: "Name is required" }, { status: 400 });
+    if (dataToUpdate.niche === null) return NextResponse.json({ error: "Niche is required" }, { status: 400 });
 
     if (Object.keys(dataToUpdate).length === 0) {
       return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
@@ -56,12 +111,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           listings: { updateMany: { where: {}, data: { isActive: false } } },
         }),
       },
-      include: { listings: true },
+      include: { listings: true, metrics: true, owner: { select: { id: true, name: true, email: true, role: true } } },
     });
 
     await logAudit({
       actorId: admin.id,
-      action: `site.${status ? String(status).toLowerCase() : "updated"}`,
+      action: status ? `site.${String(status).toLowerCase()}` : "site.updated",
       targetType: "Site",
       targetId: id,
       metadata: dataToUpdate,
@@ -91,6 +146,83 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     return NextResponse.json(updated);
+  } catch (err) {
+    if (err instanceof AuthError) return NextResponse.json({ error: err.message }, { status: err.status });
+    console.error(err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE — remove a site.
+ *   - If the site has any orders (through its listings), blocks unless ?force=1 is passed.
+ *   - With ?force=1: cascades through listings; orders remain (Order.listingId is RESTRICT
+ *     in schema) → in that case it errors and asks admin to suspend instead.
+ *   - Recommended path: Suspend (status=SUSPENDED), don't delete sites with orders.
+ */
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const admin = await requireAdmin();
+    const { id } = await params;
+    const { searchParams } = new URL(req.url);
+    const force = searchParams.get("force") === "1";
+
+    const site = await db.site.findUnique({
+      where: { id },
+      include: {
+        owner: { select: { id: true, email: true } },
+        listings: { select: { id: true, _count: { select: { orders: true } } } },
+      },
+    });
+    if (!site) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    const totalOrders = site.listings.reduce((acc, l) => acc + l._count.orders, 0);
+
+    if (totalOrders > 0 && !force) {
+      return NextResponse.json(
+        {
+          error: `This site has ${totalOrders} order(s). Suspending is recommended over delete to preserve order history. Pass ?force=1 to delete anyway (will be refused if orders prevent cascade).`,
+          totalOrders,
+        },
+        { status: 409 }
+      );
+    }
+
+    try {
+      await db.site.delete({ where: { id } });
+    } catch (err: any) {
+      // Prisma P2003 = foreign key constraint failed (orders block listing/site delete)
+      if (err?.code === "P2003") {
+        return NextResponse.json(
+          {
+            error: "Cannot delete — this site has orders that reference its listings. Suspend the site instead.",
+          },
+          { status: 409 }
+        );
+      }
+      throw err;
+    }
+
+    await logAudit({
+      actorId: admin.id,
+      action: "site.deleted",
+      targetType: "Site",
+      targetId: id,
+      metadata: { url: site.url, name: site.name, force },
+    });
+
+    if (site.owner.id !== admin.id) {
+      await notify({
+        userId: site.owner.id,
+        type: "GENERIC",
+        title: "Your site was removed",
+        body: `An admin removed ${site.name} (${site.url}) from the platform.`,
+        link: "/reseller",
+        email: true,
+      });
+    }
+
+    return NextResponse.json({ ok: true });
   } catch (err) {
     if (err instanceof AuthError) return NextResponse.json({ error: err.message }, { status: err.status });
     console.error(err);

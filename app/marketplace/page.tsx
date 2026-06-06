@@ -144,14 +144,14 @@ export default function MarketplacePage() {
         ) : (
           <>
             {/* Column header (md+) */}
-            <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_repeat(4,64px)_minmax(96px,auto)_auto] md:gap-5 md:items-center px-5 mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+            <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_repeat(4,64px)_110px_100px] md:gap-5 md:items-center px-5 mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
               <span>Site</span>
               <span className="text-center">DR</span>
               <span className="text-center">DA</span>
               <span className="text-center">Traffic</span>
               <span className="text-center">Refs</span>
               <span className="text-right">Price</span>
-              <span className="text-right pr-2">&nbsp;</span>
+              <span />
             </div>
             <div className="space-y-2.5">
               {listings.map((listing) => <ListingCard key={listing.id} listing={listing} />)}

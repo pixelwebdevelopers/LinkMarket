@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ import { PageHeader } from "@/components/panel/PageHeader";
 import { StatCard } from "@/components/panel/StatCard";
 import { EmptyState } from "@/components/panel/EmptyState";
 import { formatDate, getDomainFromUrl } from "@/lib/utils";
-import { Globe, PlusCircle, CheckCircle, XCircle, ExternalLink, Pencil, X } from "lucide-react";
+import { Globe, PlusCircle, CheckCircle, XCircle, ExternalLink, Pencil, X, BarChart3, Trash2, MoreHorizontal } from "lucide-react";
 
 interface Site {
   id: string;
@@ -38,6 +39,10 @@ export default function AdminSitesPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [editingCommission, setEditingCommission] = useState<Site | null>(null);
   const [rejectFor, setRejectFor] = useState<Site | null>(null);
+  const [editingMetrics, setEditingMetrics] = useState<Site | null>(null);
+  const [editingSite, setEditingSite] = useState<Site | null>(null);
+  const [deletingSite, setDeletingSite] = useState<Site | null>(null);
+  const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   async function load() {
@@ -99,6 +104,39 @@ export default function AdminSitesPage() {
     }
     setEditingCommission(null);
     setRejectFor(null);
+    setEditingSite(null);
+    load();
+  }
+
+  async function saveMetrics(siteId: string, body: any) {
+    setBusy(siteId);
+    setError("");
+    const res = await fetch(`/api/admin/metrics`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ siteId, ...body }),
+    });
+    setBusy(null);
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.error ?? "Failed");
+      return;
+    }
+    setEditingMetrics(null);
+    load();
+  }
+
+  async function deleteSite(siteId: string, force = false) {
+    setBusy(siteId);
+    setError("");
+    const res = await fetch(`/api/admin/sites/${siteId}${force ? "?force=1" : ""}`, { method: "DELETE" });
+    setBusy(null);
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.error ?? "Failed to delete");
+      return;
+    }
+    setDeletingSite(null);
     load();
   }
 
@@ -236,7 +274,8 @@ export default function AdminSitesPage() {
                     </Badge>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-1.5">
+                    <div className="flex gap-1.5 items-center justify-end">
+                      {/* primary status action */}
                       {s.status === "PENDING" && (
                         <>
                           <Button
@@ -272,6 +311,56 @@ export default function AdminSitesPage() {
                           Reinstate
                         </Button>
                       )}
+
+                      {/* secondary actions menu (portaled — escapes the table's overflow-hidden) */}
+                      <RowMenu
+                        isOpen={menuOpen === s.id}
+                        onOpen={() => setMenuOpen(s.id)}
+                        onClose={() => setMenuOpen(null)}
+                      >
+                        <MenuItem
+                          Icon={BarChart3}
+                          label="Edit metrics"
+                          onClick={() => {
+                            setMenuOpen(null);
+                            setEditingMetrics(s);
+                          }}
+                        />
+                        <MenuItem
+                          Icon={Pencil}
+                          label="Edit site details"
+                          onClick={() => {
+                            setMenuOpen(null);
+                            setEditingSite(s);
+                          }}
+                        />
+                        <MenuItem
+                          Icon={Pencil}
+                          label="Commission override"
+                          onClick={() => {
+                            setMenuOpen(null);
+                            setEditingCommission(s);
+                          }}
+                        />
+                        {s.status === "APPROVED" && (
+                          <MenuItem
+                            Icon={ExternalLink}
+                            label="View listings"
+                            href={`/marketplace?siteSearch=${encodeURIComponent(getDomainFromUrl(s.url))}`}
+                            onClick={() => setMenuOpen(null)}
+                          />
+                        )}
+                        <div className="border-t border-zinc-200 dark:border-zinc-800 my-1" />
+                        <MenuItem
+                          Icon={Trash2}
+                          label="Delete site"
+                          danger
+                          onClick={() => {
+                            setMenuOpen(null);
+                            setDeletingSite(s);
+                          }}
+                        />
+                      </RowMenu>
                     </div>
                   </td>
                 </tr>
@@ -297,7 +386,144 @@ export default function AdminSitesPage() {
           onSubmit={(reason) => act(rejectFor.id, { status: "REJECTED", rejectionReason: reason })}
         />
       )}
+      {editingMetrics && (
+        <MetricsModal
+          site={editingMetrics}
+          busy={busy === editingMetrics.id}
+          onClose={() => setEditingMetrics(null)}
+          onSubmit={(metrics) => saveMetrics(editingMetrics.id, metrics)}
+        />
+      )}
+      {editingSite && (
+        <EditSiteModal
+          site={editingSite}
+          busy={busy === editingSite.id}
+          onClose={() => setEditingSite(null)}
+          onSubmit={(fields) => act(editingSite.id, fields)}
+        />
+      )}
+      {deletingSite && (
+        <DeleteModal
+          site={deletingSite}
+          busy={busy === deletingSite.id}
+          error={error}
+          onClose={() => setDeletingSite(null)}
+          onConfirm={(force) => deleteSite(deletingSite.id, force)}
+        />
+      )}
     </PageContainer>
+  );
+}
+
+function MenuItem({
+  Icon,
+  label,
+  onClick,
+  href,
+  danger,
+}: {
+  Icon: any;
+  label: string;
+  onClick?: () => void;
+  href?: string;
+  danger?: boolean;
+}) {
+  const cls = `flex items-center gap-3 w-full px-3 py-2 text-sm text-left transition-colors ${
+    danger
+      ? "text-red-700 dark:text-red-400 hover:bg-red-500/10"
+      : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+  }`;
+  if (href) {
+    return (
+      <a href={href} className={cls} onClick={onClick}>
+        <Icon className="h-3.5 w-3.5 shrink-0" /> {label}
+      </a>
+    );
+  }
+  return (
+    <button onClick={onClick} className={cls}>
+      <Icon className="h-3.5 w-3.5 shrink-0" /> {label}
+    </button>
+  );
+}
+
+/**
+ * Kebab trigger + portaled dropdown. The dropdown is rendered into document.body
+ * so it isn't clipped by ancestor overflow (e.g. the table card's overflow-hidden).
+ * Position is computed from the trigger's bounding rect; if the menu would overflow
+ * the viewport's right edge, it aligns to the right of the trigger. If it would
+ * overflow the bottom, it opens upward.
+ */
+function RowMenu({
+  isOpen,
+  onOpen,
+  onClose,
+  children,
+}: {
+  isOpen: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  useLayoutEffect(() => {
+    if (!isOpen || !btnRef.current) return;
+    function place() {
+      const rect = btnRef.current!.getBoundingClientRect();
+      const menuW = 208; // w-52
+      const menuH = 280; // approximate; we let it auto-size but reserve room
+      const gap = 6;
+      let left = rect.right - menuW; // right-align with the trigger
+      if (left < 8) left = 8;
+      let top = rect.bottom + gap;
+      if (top + menuH > window.innerHeight - 8) {
+        // open upward instead
+        top = rect.top - gap - menuH;
+        if (top < 8) top = 8;
+      }
+      setPos({ top, left });
+    }
+    place();
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("resize", place);
+    };
+  }, [isOpen]);
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        onClick={() => (isOpen ? onClose() : onOpen())}
+        className="h-8 w-8 grid place-items-center rounded-lg border border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        aria-label="More actions"
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+      >
+        <MoreHorizontal className="h-4 w-4" />
+      </button>
+      {mounted && isOpen && pos &&
+        createPortal(
+          <>
+            <div className="fixed inset-0 z-[60]" onClick={onClose} />
+            <div
+              role="menu"
+              style={{ top: pos.top, left: pos.left }}
+              className="fixed w-52 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl shadow-zinc-900/12 dark:shadow-black/40 py-1 z-[70] animate-scale-in origin-top-right"
+            >
+              {children}
+            </div>
+          </>,
+          document.body
+        )}
+    </>
   );
 }
 
@@ -373,11 +599,174 @@ function RejectModal({
   );
 }
 
+function MetricsModal({
+  site,
+  busy,
+  onClose,
+  onSubmit,
+}: {
+  site: Site;
+  busy: boolean;
+  onClose: () => void;
+  onSubmit: (m: {
+    domainRating: number;
+    domainAuthority: number;
+    organicTraffic: number;
+    referringDomains: number;
+    spamScore: number;
+  }) => void;
+}) {
+  const m = site.metrics ?? {};
+  const [dr, setDr] = useState(String(m.domainRating ?? 0));
+  const [da, setDa] = useState(String(m.domainAuthority ?? 0));
+  const [traffic, setTraffic] = useState(String(m.organicTraffic ?? 0));
+  const [rd, setRd] = useState(String(m.referringDomains ?? 0));
+  const [spam, setSpam] = useState(String(m.spamScore ?? 0));
+
+  return (
+    <Modal title={`Metrics · ${getDomainFromUrl(site.url)}`} onClose={onClose}>
+      <div className="grid grid-cols-2 gap-3">
+        <Input label="DR (0–100)" type="number" min={0} max={100} value={dr} onChange={(e) => setDr(e.target.value)} />
+        <Input label="DA (0–100)" type="number" min={0} max={100} value={da} onChange={(e) => setDa(e.target.value)} />
+        <Input label="Organic Traffic" type="number" min={0} value={traffic} onChange={(e) => setTraffic(e.target.value)} />
+        <Input label="Referring Domains" type="number" min={0} value={rd} onChange={(e) => setRd(e.target.value)} />
+        <Input label="Spam Score (0–17)" type="number" min={0} max={17} step={0.1} value={spam} onChange={(e) => setSpam(e.target.value)} />
+      </div>
+      <div className="flex gap-2 pt-1">
+        <Button
+          onClick={() =>
+            onSubmit({
+              domainRating: parseFloat(dr) || 0,
+              domainAuthority: parseFloat(da) || 0,
+              organicTraffic: parseInt(traffic) || 0,
+              referringDomains: parseInt(rd) || 0,
+              spamScore: parseFloat(spam) || 0,
+            })
+          }
+          loading={busy}
+        >
+          Save metrics
+        </Button>
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+      </div>
+    </Modal>
+  );
+}
+
+function EditSiteModal({
+  site,
+  busy,
+  onClose,
+  onSubmit,
+}: {
+  site: Site;
+  busy: boolean;
+  onClose: () => void;
+  onSubmit: (fields: any) => void;
+}) {
+  const [form, setForm] = useState({
+    name: site.name,
+    url: site.url,
+    niche: site.niche,
+    language: site.language,
+    country: site.country,
+    exampleUrl: site.exampleUrl ?? "",
+    description: site.description ?? "",
+  });
+  function update(k: keyof typeof form, v: string) {
+    setForm((p) => ({ ...p, [k]: v }));
+  }
+  return (
+    <Modal title={`Edit · ${getDomainFromUrl(site.url)}`} onClose={onClose}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Input label="Site name" value={form.name} onChange={(e) => update("name", e.target.value)} />
+        <Input label="Site URL" type="url" value={form.url} onChange={(e) => update("url", e.target.value)} />
+        <Input label="Niche" value={form.niche} onChange={(e) => update("niche", e.target.value)} />
+        <Input label="Language" value={form.language} onChange={(e) => update("language", e.target.value)} />
+        <Input label="Country" value={form.country} onChange={(e) => update("country", e.target.value)} />
+        <Input
+          label="Example link"
+          type="url"
+          value={form.exampleUrl}
+          onChange={(e) => update("exampleUrl", e.target.value)}
+        />
+      </div>
+      <div>
+        <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400 uppercase tracking-wide mb-1.5">Description</p>
+        <textarea
+          rows={3}
+          value={form.description}
+          onChange={(e) => update("description", e.target.value)}
+          className="w-full rounded-xl bg-zinc-200/60 dark:bg-zinc-800/60 border border-zinc-300 dark:border-zinc-700 px-3.5 py-2.5 text-sm text-zinc-900 dark:text-zinc-100"
+        />
+      </div>
+      <div className="flex gap-2">
+        <Button onClick={() => onSubmit(form)} loading={busy}>
+          Save changes
+        </Button>
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+      </div>
+    </Modal>
+  );
+}
+
+function DeleteModal({
+  site,
+  busy,
+  error,
+  onClose,
+  onConfirm,
+}: {
+  site: Site;
+  busy: boolean;
+  error: string;
+  onClose: () => void;
+  onConfirm: (force: boolean) => void;
+}) {
+  const [confirmText, setConfirmText] = useState("");
+  const expected = getDomainFromUrl(site.url);
+  const blocked = error.toLowerCase().includes("orders");
+
+  return (
+    <Modal title={`Delete · ${expected}`} onClose={onClose}>
+      <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-sm text-red-800 dark:text-red-300">
+        <p>
+          Deleting a site removes its listings and metric history permanently. If it has paid orders, you should{" "}
+          <strong>Suspend</strong> instead.
+        </p>
+      </div>
+      <Input
+        label={`Type "${expected}" to confirm`}
+        value={confirmText}
+        onChange={(e) => setConfirmText(e.target.value)}
+      />
+      {error && <p className="text-xs text-red-700 dark:text-red-400">{error}</p>}
+      <div className="flex gap-2 pt-1">
+        <Button
+          variant="danger"
+          onClick={() => onConfirm(blocked)}
+          loading={busy}
+          disabled={confirmText !== expected}
+        >
+          {blocked ? "Force delete anyway" : "Delete site"}
+        </Button>
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+      </div>
+    </Modal>
+  );
+}
+
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl w-full max-w-md animate-scale-in">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl w-full max-w-lg animate-scale-in max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 sticky top-0 bg-white dark:bg-zinc-950 z-10">
           <h2 className="font-bold text-zinc-900 dark:text-white">{title}</h2>
           <button onClick={onClose} aria-label="Close" className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white">
             <X className="h-5 w-5" />
