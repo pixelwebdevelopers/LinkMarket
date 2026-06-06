@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDate } from "@/lib/utils";
 import { CheckCircle, XCircle, Receipt, X } from "lucide-react";
+import { PageContainer } from "@/components/panel/PageContainer";
+import { PageHeader } from "@/components/panel/PageHeader";
+import { EmptyState } from "@/components/panel/EmptyState";
 
 interface Payout {
   id: string;
@@ -76,14 +79,11 @@ export default function AdminPayoutsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6 animate-fade-in">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Payouts</h1>
-          <p className="text-zinc-600 dark:text-zinc-400 text-sm mt-1">
-            Approve and mark payouts as paid after sending money via your bank.
-          </p>
-        </div>
+    <PageContainer>
+      <PageHeader
+        title="Payouts"
+        description="Approve and mark payouts as paid after sending money via your bank."
+      />
 
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-400 text-sm rounded-xl px-4 py-3">
@@ -191,7 +191,6 @@ export default function AdminPayoutsPage() {
             ))}
           </div>
         )}
-      </div>
 
       {markPaidFor && (
         <MarkPaidModal
@@ -209,7 +208,7 @@ export default function AdminPayoutsPage() {
           onSubmit={(rejectionReason) => act(rejectFor.id, { action: "reject", rejectionReason })}
         />
       )}
-    </div>
+    </PageContainer>
   );
 }
 

@@ -10,12 +10,17 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, ShoppingCart, Globe, LogOut,
-  ChevronDown, Menu, X, Zap, Shield, BarChart2, Sparkles, LogIn,
+  ChevronDown, Menu, X, Zap, Shield, Sparkles, LogIn,
+  Wallet, Building2, Users, UserCog, BarChart3, Activity, Settings, AlertTriangle,
 } from "lucide-react";
 
 export function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
+  // When the user is inside a panel area (admin / reseller), the panel's own
+  // sidebar handles navigation, so we hide the navbar's nav links + mobile menu
+  // to avoid duplication. Keep theme toggle, notifications, and user menu.
+  const inPanel = pathname.startsWith("/admin") || pathname.startsWith("/reseller");
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -75,22 +80,24 @@ export function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
-            {navLinks.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                data-active={isActive(item.href)}
-                className={cn(
-                  "nav-link px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-150",
-                  isActive(item.href) ? "text-zinc-900 dark:text-white" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-                )}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          {/* Desktop nav — hidden inside panel areas (sidebar handles nav there) */}
+          {!inPanel && (
+            <nav className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
+              {navLinks.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  data-active={isActive(item.href)}
+                  className={cn(
+                    "nav-link px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-150",
+                    isActive(item.href) ? "text-zinc-900 dark:text-white" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                  )}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          )}
 
           {/* Right */}
           <div className="hidden md:flex items-center gap-3 shrink-0">
@@ -130,17 +137,20 @@ export function Navbar() {
                         { href: "/orders", label: "My Orders", icon: ShoppingCart },
                         ...(role === "RESELLER" ? [
                           { href: "/reseller", label: "My Sites", icon: Globe },
-                          { href: "/reseller/earnings", label: "Earnings", icon: BarChart2 },
-                          { href: "/reseller/bank-accounts", label: "Bank Accounts", icon: BarChart2 },
+                          { href: "/reseller/earnings", label: "Earnings", icon: Wallet },
+                          { href: "/reseller/bank-accounts", label: "Bank Accounts", icon: Building2 },
                         ] : []),
                         ...(role === "ADMIN" ? [
                           { href: "/admin", label: "Admin Panel", icon: Shield },
-                          { href: "/admin/resellers", label: "Resellers", icon: BarChart2 },
-                          { href: "/admin/payouts", label: "Payouts", icon: BarChart2 },
-                          { href: "/admin/disputes", label: "Disputes", icon: BarChart2 },
-                          { href: "/admin/metrics", label: "Update Metrics", icon: BarChart2 },
-                          { href: "/admin/audit", label: "Audit log", icon: BarChart2 },
-                          { href: "/admin/settings", label: "Settings", icon: BarChart2 },
+                          { href: "/admin/sites", label: "Sites", icon: Globe },
+                          { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
+                          { href: "/admin/disputes", label: "Disputes", icon: AlertTriangle },
+                          { href: "/admin/resellers", label: "Resellers", icon: Users },
+                          { href: "/admin/customers", label: "Customers", icon: UserCog },
+                          { href: "/admin/payouts", label: "Payouts", icon: Wallet },
+                          { href: "/admin/metrics", label: "Update Metrics", icon: BarChart3 },
+                          { href: "/admin/audit", label: "Audit Log", icon: Activity },
+                          { href: "/admin/settings", label: "Settings", icon: Settings },
                         ] : []),
                       ].map((item) => {
                         const Icon = item.icon;
@@ -181,28 +191,30 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Mobile toggle */}
+          {/* Mobile toggle area — hamburger hidden inside panel areas */}
           <div className="md:hidden flex items-center gap-2">
             {session && <NotificationBell />}
             <ThemeToggle />
-          <button
-            aria-label="Toggle menu"
-            className="md:hidden relative h-10 w-10 grid place-items-center rounded-xl text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60 transition-colors"
-            onClick={() => setMenuOpen(!menuOpen)}
-          >
-            <span className="sr-only">Menu</span>
-            <Menu className={cn("hamburger-line absolute h-5 w-5", menuOpen ? "opacity-0 rotate-90 scale-50" : "opacity-100")} />
-            <X className={cn("hamburger-line absolute h-5 w-5", menuOpen ? "opacity-100" : "opacity-0 -rotate-90 scale-50")} />
-          </button>
+            {!inPanel && (
+              <button
+                aria-label="Toggle menu"
+                className="relative h-10 w-10 grid place-items-center rounded-xl text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60 transition-colors"
+                onClick={() => setMenuOpen(!menuOpen)}
+              >
+                <span className="sr-only">Menu</span>
+                <Menu className={cn("hamburger-line absolute h-5 w-5", menuOpen ? "opacity-0 rotate-90 scale-50" : "opacity-100")} />
+                <X className={cn("hamburger-line absolute h-5 w-5", menuOpen ? "opacity-100" : "opacity-0 -rotate-90 scale-50")} />
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile menu — hidden inside panel areas */}
       <div
         className={cn(
           "md:hidden overflow-hidden border-t transition-all duration-300 ease-out bg-zinc-50/95 dark:bg-zinc-950/95 backdrop-blur-xl",
-          menuOpen ? "max-h-[80vh] border-zinc-200 dark:border-zinc-800 opacity-100" : "max-h-0 border-transparent opacity-0"
+          !inPanel && menuOpen ? "max-h-[80vh] border-zinc-200 dark:border-zinc-800 opacity-100" : "max-h-0 border-transparent opacity-0"
         )}
       >
         <div className="px-4 py-4 space-y-1">

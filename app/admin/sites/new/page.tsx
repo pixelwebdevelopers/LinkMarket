@@ -2,14 +2,14 @@ import { PageContainer } from "@/components/panel/PageContainer";
 import { PageHeader } from "@/components/panel/PageHeader";
 import { SiteSubmissionForm } from "@/components/sites/SiteSubmissionForm";
 
-export default function ResellerNewSitePage() {
+export default function AdminNewSitePage() {
   return (
     <PageContainer width="narrow">
       <PageHeader
-        title="Submit a site"
-        description="Our team reviews every submission within 48 hours. You'll be notified by email."
+        title="Add a site"
+        description="Admin-owned sites are auto-approved and visible on the marketplace immediately."
       />
-      <SiteSubmissionForm redirectTo="/reseller?submitted=true" />
+      <SiteSubmissionForm redirectTo="/admin/sites" />
     </PageContainer>
   );
 }

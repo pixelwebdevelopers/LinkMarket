@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { PageContainer } from "@/components/panel/PageContainer";
+import { PageHeader } from "@/components/panel/PageHeader";
+import { EmptyState } from "@/components/panel/EmptyState";
+import { Activity } from "lucide-react";
 
 interface AuditLog {
   id: string;
@@ -38,91 +42,80 @@ export default function AuditPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6 animate-fade-in">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Audit log</h1>
-          <p className="text-zinc-600 dark:text-zinc-400 text-sm mt-1">
-            Every admin-affecting action with actor, timestamp, and metadata.
-          </p>
-        </div>
+    <PageContainer>
+      <PageHeader
+        title="Audit log"
+        description="Every admin-affecting action with actor, timestamp, and metadata."
+      />
 
-        <div className="flex gap-2">
-          <Input
-            placeholder="Filter by action (e.g. payout, dispute, site)"
-            value={actionFilter}
-            onChange={(e) => setActionFilter(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && load(true)}
-          />
-          <Button variant="outline" onClick={() => load(true)}>
-            Filter
-          </Button>
-        </div>
-
-        {loading && items.length === 0 ? (
-          <div className="h-40 animate-pulse bg-zinc-100 dark:bg-zinc-900 rounded-2xl" />
-        ) : items.length === 0 ? (
-          <div className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 border-dashed rounded-2xl p-12 text-center text-zinc-500">
-            No audit log entries yet.
-          </div>
-        ) : (
-          <>
-            <div className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="border-b border-zinc-200 dark:border-zinc-800">
-                  <tr>
-                    {["Time", "Actor", "Action", "Target", "Metadata"].map((h) => (
-                      <th
-                        key={h}
-                        className="text-left px-4 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wide"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                  {items.map((row) => (
-                    <tr key={row.id} className="align-top">
-                      <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400 text-xs whitespace-nowrap">
-                        {new Date(row.createdAt).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
-                        <p className="font-medium">{row.actor.name ?? row.actor.email}</p>
-                        <p className="text-xs text-zinc-500">{row.actor.role}</p>
-                      </td>
-                      <td className="px-4 py-3">
-                        <code className="text-xs font-mono text-indigo-700 dark:text-indigo-300 bg-indigo-500/10 px-1.5 py-0.5 rounded">
-                          {row.action}
-                        </code>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400">
-                        {row.targetType ? `${row.targetType}/${row.targetId?.slice(-8)}` : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400 max-w-[280px]">
-                        {row.metadata ? (
-                          <pre className="whitespace-pre-wrap break-words font-mono text-[11px] bg-zinc-200/40 dark:bg-zinc-800/40 rounded p-2 overflow-hidden">
-                            {JSON.stringify(row.metadata, null, 0)}
-                          </pre>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {nextCursor && (
-              <div className="text-center">
-                <Button variant="outline" onClick={() => load(false)} loading={loading}>
-                  Load more
-                </Button>
-              </div>
-            )}
-          </>
-        )}
+      <div className="flex gap-2 mb-4">
+        <Input
+          placeholder="Filter by action (e.g. payout, dispute, site)"
+          value={actionFilter}
+          onChange={(e) => setActionFilter(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && load(true)}
+        />
+        <Button variant="outline" onClick={() => load(true)}>Filter</Button>
       </div>
-    </div>
+
+      {loading && items.length === 0 ? (
+        <div className="h-40 animate-pulse bg-zinc-100 dark:bg-zinc-900 rounded-2xl" />
+      ) : items.length === 0 ? (
+        <EmptyState Icon={Activity} title="No audit log entries yet" />
+      ) : (
+        <>
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
+                <tr>
+                  {["Time", "Actor", "Action", "Target", "Metadata"].map((h) => (
+                    <th key={h} className="text-left px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                {items.map((row) => (
+                  <tr key={row.id} className="align-top">
+                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400 text-xs whitespace-nowrap">
+                      {new Date(row.createdAt).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
+                      <p className="font-medium">{row.actor.name ?? row.actor.email}</p>
+                      <p className="text-xs text-zinc-500">{row.actor.role}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <code className="text-xs font-mono text-indigo-700 dark:text-indigo-300 bg-indigo-500/10 px-1.5 py-0.5 rounded">
+                        {row.action}
+                      </code>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400">
+                      {row.targetType ? `${row.targetType}/${row.targetId?.slice(-8)}` : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400 max-w-[280px]">
+                      {row.metadata ? (
+                        <pre className="whitespace-pre-wrap break-words font-mono text-[11px] bg-zinc-100 dark:bg-zinc-800/40 rounded p-2 overflow-hidden">
+                          {JSON.stringify(row.metadata, null, 0)}
+                        </pre>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {nextCursor && (
+            <div className="text-center mt-4">
+              <Button variant="outline" onClick={() => load(false)} loading={loading}>
+                Load more
+              </Button>
+            </div>
+          )}
+        </>
+      )}
+    </PageContainer>
   );
 }

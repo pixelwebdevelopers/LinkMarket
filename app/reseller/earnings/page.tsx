@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
 import { Wallet, ArrowUpCircle, CheckCircle, X } from "lucide-react";
+import { PageContainer } from "@/components/panel/PageContainer";
+import { PageHeader } from "@/components/panel/PageHeader";
 
 interface BalanceData {
   availableCents: number;
@@ -61,25 +63,21 @@ export default function EarningsPage() {
 
   if (loading || !data) {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-        <div className="max-w-5xl mx-auto px-4 py-10 animate-pulse h-64 bg-zinc-100 dark:bg-zinc-900 rounded-2xl" />
-      </div>
+      <PageContainer>
+        <div className="h-64 animate-pulse bg-zinc-100 dark:bg-zinc-900 rounded-2xl" />
+      </PageContainer>
     );
   }
 
   const canRequest = data.availableCents >= data.thresholdCents;
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6 animate-fade-in">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Earnings</h1>
-            <p className="text-zinc-600 dark:text-zinc-400 text-sm mt-1">
-              Track your reseller balance and request payouts.
-            </p>
-          </div>
-          <div className="flex gap-2">
+    <PageContainer>
+      <PageHeader
+        title="Earnings"
+        description="Track your reseller balance and request payouts."
+        actions={
+          <>
             <Link href="/reseller/bank-accounts">
               <Button variant="outline" size="sm">
                 Bank accounts ({banks.length})
@@ -99,8 +97,9 @@ export default function EarningsPage() {
             >
               <ArrowUpCircle className="h-4 w-4" /> Request payout
             </Button>
-          </div>
-        </div>
+          </>
+        }
+      />
 
         {banks.length === 0 && (
           <div className="bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-sm rounded-xl px-4 py-3">
@@ -114,11 +113,11 @@ export default function EarningsPage() {
 
         {/* Balance cards */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card label="Available" value={fmtCents(data.availableCents)} accent="indigo" />
-          <Card label="Pending (in-flight orders)" value={fmtCents(data.pendingCents)} accent="amber" />
-          <Card label="Lifetime earned" value={fmtCents(data.lifetimeEarnedCents)} accent="emerald" />
-          <Card label="Paid out" value={fmtCents(data.paidOutCents)} accent="purple" />
-        </div>
+        <Card label="Available" value={fmtCents(data.availableCents)} accent="indigo" />
+        <Card label="Pending (in-flight orders)" value={fmtCents(data.pendingCents)} accent="amber" />
+        <Card label="Lifetime earned" value={fmtCents(data.lifetimeEarnedCents)} accent="emerald" />
+        <Card label="Paid out" value={fmtCents(data.paidOutCents)} accent="purple" />
+      </div>
 
         <p className="text-xs text-zinc-500">
           Minimum payout: <strong className="text-zinc-700 dark:text-zinc-300">{fmtCents(data.thresholdCents)}</strong>
@@ -223,7 +222,6 @@ export default function EarningsPage() {
             </div>
           )}
         </div>
-      </div>
 
       {showRequest && (
         <PayoutRequestModal
@@ -237,7 +235,7 @@ export default function EarningsPage() {
           }}
         />
       )}
-    </div>
+    </PageContainer>
   );
 }
 

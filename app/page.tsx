@@ -84,69 +84,73 @@ export default function HomePage() {
           <div className="absolute top-[60%] left-[20%] w-56 h-56 bg-blue-600/10 rounded-full blur-3xl animate-float-slow" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 pb-16 text-center">
-          <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-xs font-semibold px-4 py-2 rounded-full mb-8 animate-fade-in-up backdrop-blur-sm">
-            <span className="relative flex h-2 w-2 text-emerald-700 dark:text-emerald-400">
-              <span className="ping-soft absolute inset-0" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-            </span>
-            10,000+ live listings · updated weekly
-          </div>
-
-          <h1 className="text-[2.75rem] leading-[1.05] sm:text-6xl lg:text-7xl font-extrabold text-zinc-900 dark:text-white tracking-tight mb-6 animate-fade-in-up delay-100">
-            Build Links That
-            <br />
-            <span className="gradient-text">Actually Rank</span>
-          </h1>
-
-          <p className="text-lg sm:text-xl text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto mb-9 leading-relaxed animate-fade-in-up delay-200">
-            Buy guest posts and niche edits from 10,000+ real, vetted publishers.
-            Fast delivery. Guaranteed quality. Transparent pricing.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10 animate-fade-in-up delay-300">
-            <Link href="/marketplace" className="w-full sm:w-auto">
-              <Button size="lg" className="text-base px-8 h-12 w-full shine">
-                Browse Marketplace <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/register?role=publisher" className="w-full sm:w-auto">
-              <Button size="lg" variant="outline" className="text-base px-8 h-12 w-full">
-                List Your Site
-              </Button>
-            </Link>
-          </div>
-
-          {/* Social proof */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-16 animate-fade-in-up delay-400">
-            <div className="flex -space-x-2.5">
-              {[
-                "from-indigo-500 to-blue-500",
-                "from-purple-500 to-pink-500",
-                "from-emerald-500 to-teal-500",
-                "from-amber-500 to-orange-500",
-                "from-rose-500 to-red-500",
-              ].map((g, i) => (
-                <div
-                  key={i}
-                  className={`h-8 w-8 rounded-full bg-gradient-to-br ${g} ring-2 ring-white dark:ring-zinc-950 grid place-items-center text-[10px] font-bold text-white`}
-                >
-                  {["A", "S", "J", "M", "R"][i]}
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex">
-                {[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-700 dark:text-amber-400" />)}
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 lg:pt-24 pb-16">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
+            {/* LEFT — copy */}
+            <div className="text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-xs font-semibold px-4 py-2 rounded-full mb-6 animate-fade-in-up backdrop-blur-sm">
+                <span className="relative flex h-2 w-2 text-emerald-700 dark:text-emerald-400">
+                  <span className="ping-soft absolute inset-0" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                </span>
+                10,000+ live listings · updated weekly
               </div>
-              <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                <span className="font-semibold text-zinc-900 dark:text-white">4.9/5</span> from 1,000+ SEOs
-              </span>
-            </div>
-          </div>
 
-          {/* Floating dashboard preview */}
-          <div className="relative max-w-3xl mx-auto animate-fade-in-up delay-500">
+              <h1 className="text-[2.5rem] leading-[1.05] sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-zinc-900 dark:text-white tracking-tight mb-5 animate-fade-in-up delay-100">
+                Build Links That
+                <br />
+                <span className="gradient-text">Actually Rank</span>
+              </h1>
+
+              <p className="text-base sm:text-lg lg:text-xl text-zinc-600 dark:text-zinc-400 max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed animate-fade-in-up delay-200">
+                Buy guest posts and niche edits from 10,000+ real, vetted publishers.
+                Fast delivery. Guaranteed quality. Transparent pricing.
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-3 mb-8 animate-fade-in-up delay-300">
+                <Link href="/marketplace" className="w-full sm:w-auto">
+                  <Button size="lg" className="text-base px-8 h-12 w-full shine">
+                    Browse Marketplace <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link href="/register?role=publisher" className="w-full sm:w-auto">
+                  <Button size="lg" variant="outline" className="text-base px-8 h-12 w-full">
+                    List Your Site
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Social proof */}
+              <div className="flex flex-col sm:flex-row items-center lg:items-start justify-center lg:justify-start gap-3 sm:gap-4 animate-fade-in-up delay-400">
+                <div className="flex -space-x-2.5">
+                  {[
+                    "from-indigo-500 to-blue-500",
+                    "from-purple-500 to-pink-500",
+                    "from-emerald-500 to-teal-500",
+                    "from-amber-500 to-orange-500",
+                    "from-rose-500 to-red-500",
+                  ].map((g, i) => (
+                    <div
+                      key={i}
+                      className={`h-8 w-8 rounded-full bg-gradient-to-br ${g} ring-2 ring-white dark:ring-zinc-950 grid place-items-center text-[10px] font-bold text-white`}
+                    >
+                      {["A", "S", "J", "M", "R"][i]}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex">
+                    {[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-700 dark:text-amber-400" />)}
+                  </div>
+                  <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                    <span className="font-semibold text-zinc-900 dark:text-white">4.9/5</span> from 1,000+ SEOs
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT — Floating dashboard preview */}
+            <div className="relative w-full max-w-xl mx-auto lg:max-w-none animate-fade-in-up delay-500">
             {/* conic glow */}
             <div className="absolute -inset-10 rounded-[2rem] conic-glow blur-2xl opacity-50 pointer-events-none" />
             <div className="relative float-card rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/80 backdrop-blur-xl shadow-2xl shadow-zinc-900/10 dark:shadow-black/60 overflow-hidden">
@@ -207,6 +211,7 @@ export default function HomePage() {
             <div className="hidden sm:flex absolute -right-6 bottom-10 items-center gap-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100/90 dark:bg-zinc-900/90 backdrop-blur px-3 py-2 shadow-xl animate-float-slow">
               <div className="h-7 w-7 rounded-lg bg-indigo-500/15 grid place-items-center"><Clock className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" /></div>
               <div><p className="text-[10px] text-zinc-500 leading-none mb-0.5">Avg. delivery</p><p className="text-xs font-bold text-zinc-900 dark:text-white">24 hours</p></div>
+            </div>
             </div>
           </div>
 

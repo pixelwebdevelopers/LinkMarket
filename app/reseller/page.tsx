@@ -7,6 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getDomainFromUrl } from "@/lib/utils";
 import { Globe, PlusCircle, CheckCircle } from "lucide-react";
+import { PageContainer } from "@/components/panel/PageContainer";
+import { PageHeader } from "@/components/panel/PageHeader";
+import { EmptyState } from "@/components/panel/EmptyState";
 
 const statusVariant: Record<string, any> = {
   PENDING: "warning",
@@ -54,25 +57,24 @@ export default function ResellerSitesPage() {
   }, []);
 
   if (loading) return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <div className="max-w-5xl mx-auto px-4 py-10 animate-pulse h-64 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl" />
-    </div>
+    <PageContainer>
+      <div className="h-64 animate-pulse bg-zinc-100 dark:bg-zinc-900 rounded-2xl" />
+    </PageContainer>
   );
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">My Sites</h1>
-            <p className="text-zinc-600 dark:text-zinc-400 text-sm mt-1">Sites you've listed on the marketplace</p>
-          </div>
+    <PageContainer>
+      <PageHeader
+        title="My sites"
+        description="Sites you've listed on the marketplace."
+        actions={
           <Link href="/reseller/new">
             <Button size="sm">
-              <PlusCircle className="h-4 w-4" /> Add Site
+              <PlusCircle className="h-4 w-4" /> Add site
             </Button>
           </Link>
-        </div>
+        }
+      />
 
         <Suspense>
           <SubmittedBanner />
@@ -85,20 +87,20 @@ export default function ResellerSitesPage() {
         )}
 
         {sites.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="h-16 w-16 rounded-2xl bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-4">
-              <Globe className="h-8 w-8 text-zinc-400 dark:text-zinc-600" />
-            </div>
-            <p className="font-semibold text-zinc-900 dark:text-white">No sites yet</p>
-            <p className="text-sm mt-1 text-zinc-500">Submit your first site to start earning.</p>
-            <Link href="/reseller/new">
-              <Button className="mt-4">Submit a Site</Button>
-            </Link>
-          </div>
+          <EmptyState
+            Icon={Globe}
+            title="No sites yet"
+            description="Submit your first site to start earning."
+            action={
+              <Link href="/reseller/new">
+                <Button>Submit a site</Button>
+              </Link>
+            }
+          />
         ) : (
           <div className="space-y-4">
             {sites.map((site: any) => (
-              <div key={site.id} className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 lift hover:border-indigo-500/30">
+              <div key={site.id} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 lift hover:border-indigo-500/30">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -144,7 +146,6 @@ export default function ResellerSitesPage() {
             ))}
           </div>
         )}
-      </div>
-    </div>
+    </PageContainer>
   );
 }

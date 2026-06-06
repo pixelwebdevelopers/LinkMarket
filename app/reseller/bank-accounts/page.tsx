@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Building2, PlusCircle, X, Star, Trash2 } from "lucide-react";
+import { PageContainer } from "@/components/panel/PageContainer";
+import { PageHeader } from "@/components/panel/PageHeader";
+import { EmptyState } from "@/components/panel/EmptyState";
 
 interface BankAccount {
   id: string;
@@ -66,19 +69,16 @@ export default function BankAccountsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-fade-in space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Bank Accounts</h1>
-            <p className="text-zinc-600 dark:text-zinc-400 text-sm mt-1">
-              Where you'd like to receive payouts from the platform.
-            </p>
-          </div>
+    <PageContainer width="narrow">
+      <PageHeader
+        title="Bank accounts"
+        description="Where you'd like to receive payouts from the platform."
+        actions={
           <Button size="sm" onClick={() => setShowAdd(true)}>
             <PlusCircle className="h-4 w-4" /> Add account
           </Button>
-        </div>
+        }
+      />
 
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-400 text-sm rounded-xl px-4 py-3">
@@ -89,12 +89,12 @@ export default function BankAccountsPage() {
         {loading ? (
           <div className="h-40 animate-pulse bg-zinc-100 dark:bg-zinc-900 rounded-2xl" />
         ) : accounts.length === 0 ? (
-          <div className="bg-zinc-100 dark:bg-zinc-900 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl p-12 text-center">
-            <Building2 className="h-10 w-10 text-zinc-400 dark:text-zinc-600 mx-auto mb-3" />
-            <p className="font-semibold text-zinc-900 dark:text-white">No bank accounts yet</p>
-            <p className="text-sm text-zinc-500 mt-1 mb-4">Add one to enable payouts.</p>
-            <Button onClick={() => setShowAdd(true)}>Add your first account</Button>
-          </div>
+          <EmptyState
+            Icon={Building2}
+            title="No bank accounts yet"
+            description="Add one to enable payouts."
+            action={<Button onClick={() => setShowAdd(true)}>Add your first account</Button>}
+          />
         ) : (
           <div className="space-y-3">
             {accounts.map((a) => (
@@ -131,10 +131,9 @@ export default function BankAccountsPage() {
             ))}
           </div>
         )}
-      </div>
 
       {showAdd && <AddModal onClose={() => setShowAdd(false)} onAdded={load} />}
-    </div>
+    </PageContainer>
   );
 }
 

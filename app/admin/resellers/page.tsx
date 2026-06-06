@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PlusCircle, X, UserPlus } from "lucide-react";
+import { PageContainer } from "@/components/panel/PageContainer";
+import { PageHeader } from "@/components/panel/PageHeader";
 
 interface Reseller {
   id: string;
@@ -36,19 +38,16 @@ export default function AdminResellersPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6 animate-fade-in">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Resellers</h1>
-            <p className="text-zinc-600 dark:text-zinc-400 text-sm mt-1">
-              Create new reseller accounts or promote existing users.
-            </p>
-          </div>
+    <PageContainer>
+      <PageHeader
+        title="Resellers"
+        description="Create new reseller accounts or promote existing users."
+        actions={
           <Button onClick={() => setShowCreate(true)}>
-            <UserPlus className="h-4 w-4" /> Add Reseller
+            <UserPlus className="h-4 w-4" /> Add reseller
           </Button>
-        </div>
+        }
+      />
 
         <div className="flex gap-2">
           <Input
@@ -99,10 +98,8 @@ export default function AdminResellersPage() {
             </table>
           </div>
         )}
-      </div>
-
       {showCreate && <CreateResellerModal onClose={() => setShowCreate(false)} onCreated={load} />}
-    </div>
+    </PageContainer>
   );
 }
 

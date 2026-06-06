@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { formatDate, getDomainFromUrl } from "@/lib/utils";
 import { AlertTriangle, ArrowLeft, MessageSquare, X } from "lucide-react";
 import { MessageThread } from "@/components/orders/MessageThread";
+import { PageContainer } from "@/components/panel/PageContainer";
 
 function fmtCents(c: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(c / 100);
@@ -37,15 +38,15 @@ export default function AdminOrderDetailPage() {
 
   if (loading)
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-        <div className="max-w-3xl mx-auto px-4 py-10 animate-pulse h-96 bg-zinc-100 dark:bg-zinc-900 rounded-2xl" />
-      </div>
+      <PageContainer width="narrow">
+        <div className="animate-pulse h-96 bg-zinc-100 dark:bg-zinc-900 rounded-2xl" />
+      </PageContainer>
     );
   if (!order || order.error) {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
+      <PageContainer width="narrow">
         <div className="text-center py-20 text-zinc-500">Order not found.</div>
-      </div>
+      </PageContainer>
     );
   }
 
@@ -69,13 +70,13 @@ export default function AdminOrderDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-fade-in">
+    <PageContainer width="narrow">
+      <div className="space-y-6">
         <Link
-          href="/admin"
+          href="/admin/orders"
           className="text-sm text-indigo-700 dark:text-indigo-400 hover:underline inline-flex items-center gap-1"
         >
-          <ArrowLeft className="h-3.5 w-3.5" /> Back to admin
+          <ArrowLeft className="h-3.5 w-3.5" /> Back to orders
         </Link>
 
         {error && (
@@ -198,7 +199,7 @@ export default function AdminOrderDetailPage() {
           onSubmit={(resolution) => resolve(resolution)}
         />
       )}
-    </div>
+    </PageContainer>
   );
 }
 

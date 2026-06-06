@@ -4,174 +4,243 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageContainer } from "@/components/panel/PageContainer";
+import { PageHeader } from "@/components/panel/PageHeader";
+import { StatCard } from "@/components/panel/StatCard";
+import { EmptyState } from "@/components/panel/EmptyState";
 import { formatDate, getDomainFromUrl } from "@/lib/utils";
-import { BarChart2, Users, Globe, CheckCircle, XCircle, Clock, ExternalLink } from "lucide-react";
-import { useSession } from "next-auth/react";
+import {
+  Users,
+  Globe,
+  ShoppingCart,
+  Wallet,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  ExternalLink,
+} from "lucide-react";
+
+function fmtCents(c: number) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(c / 100);
+}
 
 export default function AdminPage() {
-  const { data: session } = useSession();
-  const [sites, setSites] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [pending, setPending] = useState<any[]>([]);
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [openDisputes, setOpenDisputes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetch("/api/admin/metrics").then((r) => r.json()).then((d) => { setSites(d); setLoading(false); });
-  }, []);
+  async function load() {
+    setLoading(true);
+    const [sitesRes, ordersRes, disputesRes, payoutsRes, customersRes, resellersRes] = await Promise.all([
+      fetch("/api/admin/metrics").then((r) => r.json()),
+      fetch("/api/orders").then((r) => r.json()),
+      fetch("/api/admin/disputes?status=OPEN").then((r) => r.json()),
+      fetch("/api/admin/payouts?status=REQUESTED").then((r) => r.json()),
+      fetch("/api/admin/customers").then((r) => r.json()),
+      fetch("/api/admin/resellers").then((r) => r.json()),
+    ]);
+    const sites = Array.isArray(sitesRes) ? sitesRes : [];
+    const orders = ordersRes.orders ?? [];
+    const disputes = Array.isArray(disputesRes) ? disputesRes : [];
+    const payouts = Array.isArray(payoutsRes) ? payoutsRes : [];
+    const customers = Array.isArray(customersRes) ? customersRes : [];
+    const resellers = Array.isArray(resellersRes) ? resellersRes : [];
 
-  async function updateSiteStatus(siteId: string, status: string) {
-    setUpdating(siteId);
-    const res = await fetch(`/api/admin/sites/${siteId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+    const totalRevenueCents = orders
+      .filter((o: any) => !["PENDING_PAYMENT", "REFUNDED", "CANCELLED"].includes(o.status))
+      .reduce((acc: number, o: any) => acc + (o.pricePaidCents ?? 0), 0);
+
+    setStats({
+      sites: sites.length,
+      pendingSites: sites.filter((s: any) => s.status === "PENDING").length,
+      orders: orders.length,
+      openDisputes: disputes.length,
+      pendingPayouts: payouts.length,
+      customers: customers.length,
+      resellers: resellers.length,
+      totalRevenueCents,
     });
-    const updated = await res.json();
-    setSites((prev) => prev.map((s) => s.id === siteId ? { ...s, status: updated.status } : s));
-    setUpdating(null);
+    setPending(sites.filter((s: any) => s.status === "PENDING").slice(0, 5));
+    setRecentOrders(orders.slice(0, 6));
+    setOpenDisputes(disputes.slice(0, 5));
+    setLoading(false);
   }
 
-  const pending = sites.filter((s) => s.status === "PENDING");
-  const approved = sites.filter((s) => s.status === "APPROVED");
-  const role = session?.user?.role;
+  useEffect(() => {
+    load();
+  }, []);
 
-  if (loading) return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 max-w-6xl mx-auto px-4 py-10 space-y-4">
-      {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-20 bg-zinc-100 dark:bg-zinc-900 rounded-2xl animate-pulse" />)}
-    </div>
-  );
+  async function approveSite(id: string) {
+    setBusy(id);
+    await fetch(`/api/admin/sites/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "APPROVED" }),
+    });
+    setBusy(null);
+    load();
+  }
+
+  if (loading || !stats)
+    return (
+      <PageContainer>
+        <div className="h-40 animate-pulse bg-zinc-100 dark:bg-zinc-900 rounded-2xl" />
+      </PageContainer>
+    );
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <div className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
-              {role === "ADMIN" ? "Admin Panel" : "Admin Panel"}
-            </h1>
-            <p className="text-zinc-600 dark:text-zinc-400 text-sm mt-1">Manage resellers, sites and metrics</p>
-          </div>
-          <Link href="/admin/metrics">
-            <Button variant="outline" size="sm"><BarChart2 className="h-4 w-4" /> Update Metrics</Button>
-          </Link>
-        </div>
+    <PageContainer>
+      <PageHeader
+        title="Dashboard"
+        description="Live snapshot of marketplace activity."
+        actions={
+          <>
+            <Link href="/admin/sites/new"><Button variant="outline" size="sm">Add site</Button></Link>
+            <Link href="/admin/resellers"><Button size="sm">Add reseller</Button></Link>
+          </>
+        }
+      />
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <StatCard label="Sites" value={stats.sites} hint={`${stats.pendingSites} pending`} Icon={Globe} accent="indigo" href="/admin/sites" />
+        <StatCard label="Orders" value={stats.orders} Icon={ShoppingCart} accent="emerald" href="/admin/orders" />
+        <StatCard
+          label="Revenue (gross)"
+          value={fmtCents(stats.totalRevenueCents)}
+          hint="Sum of all non-refunded orders"
+          Icon={Wallet}
+          accent="purple"
+        />
+        <StatCard label="Customers" value={stats.customers} hint={`${stats.resellers} resellers`} Icon={Users} accent="amber" href="/admin/customers" />
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { label: "Total Sites", value: sites.length, icon: Globe, color: "text-indigo-700 dark:text-indigo-400 bg-indigo-500/10 border-indigo-500/20" },
-            { label: "Pending Review", value: pending.length, icon: Clock, color: "text-amber-700 dark:text-amber-400 bg-amber-500/10 border-amber-500/20" },
-            { label: "Approved Sites", value: approved.length, icon: CheckCircle, color: "text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20" },
-            { label: "Owners", value: new Set(sites.map((s) => s.ownerId)).size, icon: Users, color: "text-purple-700 dark:text-purple-400 bg-purple-500/10 border-purple-500/20" },
-          ].map((stat) => {
-            const Icon = stat.icon;
-            return (
-              <div key={stat.label} className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 flex items-center gap-4">
-                <div className={`h-11 w-11 rounded-xl border flex items-center justify-center shrink-0 ${stat.color}`}>
-                  <Icon className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-zinc-900 dark:text-white">{stat.value}</p>
-                  <p className="text-xs text-zinc-500">{stat.label}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Pending */}
-        {pending.length > 0 && (
-          <div>
-            <h2 className="font-bold text-zinc-900 dark:text-white text-lg mb-4 flex items-center gap-2">
-              Pending Reviews
-              <span className="h-6 w-6 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs flex items-center justify-center font-bold">{pending.length}</span>
-            </h2>
-            <div className="space-y-3">
-              {pending.map((site) => (
-                <div key={site.id} className="bg-zinc-100 dark:bg-zinc-900 border border-amber-500/20 rounded-2xl p-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <Badge variant="warning">Pending Review</Badge>
-                        <span className="text-xs text-zinc-500">{site.niche} · {site.language}</span>
-                      </div>
-                      <h3 className="font-bold text-zinc-900 dark:text-white">{getDomainFromUrl(site.url)}</h3>
-                      <p className="text-xs text-zinc-500 mt-1">
-                        Submitted: {formatDate(site.createdAt)} · {site.owner?.email} ({site.owner?.role})
+      {/* Action items */}
+      <div className="grid lg:grid-cols-2 gap-6 mb-6">
+        {/* Pending sites */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-zinc-900 dark:text-white">Pending site reviews</h2>
+            <Link href="/admin/sites" className="text-xs text-indigo-700 dark:text-indigo-400 hover:underline">View all →</Link>
+          </div>
+          {pending.length === 0 ? (
+            <EmptyState Icon={CheckCircle} title="Inbox zero" description="No sites awaiting review right now." />
+          ) : (
+            <div className="space-y-2">
+              {pending.map((s) => (
+                <div
+                  key={s.id}
+                  className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex items-center gap-3"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-zinc-900 dark:text-white text-sm truncate">
+                        {getDomainFromUrl(s.url)}
                       </p>
-                      {site.description && <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2">{site.description}</p>}
-                      <div className="flex gap-4 mt-3">
-                        <a href={site.url} target="_blank" rel="noopener noreferrer"
-                          className="text-xs text-indigo-700 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1 transition-colors">
-                          <ExternalLink className="h-3 w-3" /> Visit site
-                        </a>
-                        {site.exampleUrl && (
-                          <a href={site.exampleUrl} target="_blank" rel="noopener noreferrer"
-                            className="text-xs text-indigo-700 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1 transition-colors">
-                            <ExternalLink className="h-3 w-3" /> Example link
-                          </a>
-                        )}
-                      </div>
+                      <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-indigo-700 dark:hover:text-indigo-400">
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
                     </div>
-                    <div className="flex gap-2 shrink-0">
-                      <Button size="sm" variant="success" onClick={() => updateSiteStatus(site.id, "APPROVED")} loading={updating === site.id}>
-                        <CheckCircle className="h-4 w-4" /> Approve
-                      </Button>
-                      <Button size="sm" variant="danger" onClick={() => updateSiteStatus(site.id, "REJECTED")} loading={updating === site.id}>
-                        <XCircle className="h-4 w-4" /> Reject
-                      </Button>
-                    </div>
+                    <p className="text-xs text-zinc-500 mt-0.5">
+                      {s.niche} · {s.owner?.email}
+                    </p>
+                  </div>
+                  <div className="flex gap-1.5 shrink-0">
+                    <Button size="sm" variant="success" onClick={() => approveSite(s.id)} loading={busy === s.id}>
+                      <CheckCircle className="h-3 w-3" /> Approve
+                    </Button>
+                    <Link href={`/admin/sites?focus=${s.id}`}>
+                      <Button size="sm" variant="outline">Review</Button>
+                    </Link>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </section>
 
-        {/* All sites table */}
-        <div>
-          <h2 className="font-bold text-zinc-900 dark:text-white text-lg mb-4">All Sites</h2>
-          <div className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden">
+        {/* Open disputes */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-zinc-900 dark:text-white">Open disputes</h2>
+            <Link href="/admin/disputes" className="text-xs text-indigo-700 dark:text-indigo-400 hover:underline">View all →</Link>
+          </div>
+          {openDisputes.length === 0 ? (
+            <EmptyState Icon={CheckCircle} title="No active disputes" />
+          ) : (
+            <div className="space-y-2">
+              {openDisputes.map((d) => (
+                <Link key={d.id} href={`/admin/orders/${d.order.id}`}>
+                  <div className="bg-white dark:bg-zinc-900 border border-amber-500/20 rounded-xl p-4 hover:border-amber-500/40 transition-colors">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-zinc-900 dark:text-white text-sm truncate">
+                          {getDomainFromUrl(d.order.listing.site.url)} — {fmtCents(d.order.pricePaidCents)}
+                        </p>
+                        <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2 mt-0.5">{d.reason}</p>
+                        <p className="text-[11px] text-zinc-500 mt-1">{d.order.customer.email}</p>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* Recent orders */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-zinc-900 dark:text-white">Recent orders</h2>
+          <Link href="/admin/orders" className="text-xs text-indigo-700 dark:text-indigo-400 hover:underline">View all →</Link>
+        </div>
+        {recentOrders.length === 0 ? (
+          <EmptyState Icon={ShoppingCart} title="No orders yet" />
+        ) : (
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="border-b border-zinc-200 dark:border-zinc-800">
+              <thead className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
                 <tr>
-                  {["Site", "Niche", "DR", "Traffic", "Status", "Actions"].map((h) => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wide">{h}</th>
+                  {["Order", "Site", "Customer", "Status", "Amount", ""].map((h, i) => (
+                    <th key={i} className="text-left px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                      {h}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                {sites.map((site) => (
-                  <tr key={site.id} className="hover:bg-zinc-200/40 dark:hover:bg-zinc-800/40 transition-colors">
-                    <td className="px-4 py-3 font-semibold text-zinc-900 dark:text-white">{getDomainFromUrl(site.url)}</td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{site.niche}</td>
-                    <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">{site.metrics?.domainRating ?? "—"}</td>
-                    <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">{site.metrics?.organicTraffic?.toLocaleString() ?? "—"}</td>
+                {recentOrders.map((o) => (
+                  <tr key={o.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/40">
+                    <td className="px-4 py-3 font-mono text-xs">{o.id.slice(-8).toUpperCase()}</td>
+                    <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
+                      {getDomainFromUrl(o.listing?.site?.url ?? "")}
+                    </td>
+                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400 text-xs">{o.customer?.email}</td>
                     <td className="px-4 py-3">
-                      <Badge variant={site.status === "APPROVED" ? "success" : site.status === "PENDING" ? "warning" : "danger"}>
-                        {site.status}
+                      <Badge variant={["COMPLETED", "PAID", "PUBLISHED"].includes(o.status) ? "success" : ["REFUNDED", "CANCELLED", "REJECTED", "DISPUTED"].includes(o.status) ? "danger" : "warning"}>
+                        {o.status.replace("_", " ")}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-3">
-                        {site.status !== "APPROVED" && (
-                          <button onClick={() => updateSiteStatus(site.id, "APPROVED")}
-                            className="text-xs text-emerald-700 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium transition-colors">Approve</button>
-                        )}
-                        {site.status === "APPROVED" && (
-                          <button onClick={() => updateSiteStatus(site.id, "SUSPENDED")}
-                            className="text-xs text-red-700 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition-colors">Suspend</button>
-                        )}
-                      </div>
+                    <td className="px-4 py-3 tabular-nums font-medium text-zinc-900 dark:text-white">
+                      {fmtCents(o.pricePaidCents)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Link href={`/admin/orders/${o.id}`} className="text-xs text-indigo-700 dark:text-indigo-400 hover:underline">
+                        View →
+                      </Link>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
-      </div>
-    </div>
+        )}
+      </section>
+    </PageContainer>
   );
 }
