@@ -242,7 +242,7 @@ export default function AdminSitesPage() {
                   </td>
                   <td className="px-4 py-3">
                     <p className="text-zinc-700 dark:text-zinc-300 text-xs">{s.owner.email}</p>
-                    <Badge variant={s.owner.role === "ADMIN" ? "manager" : "success"} className="text-[10px] mt-0.5">
+                    <Badge variant={s.owner.role === "ADMIN" ? "admin" : "success"} className="text-[10px] mt-0.5">
                       {s.owner.role}
                     </Badge>
                   </td>

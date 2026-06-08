@@ -21,9 +21,11 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json();
 
     const allowedKeys = Object.keys(DEFAULT_SETTINGS) as SettingKey[];
-    const updates: Partial<typeof DEFAULT_SETTINGS> = {};
+    // Use a mutable record — DEFAULT_SETTINGS uses `as const` which makes its keys
+    // readonly, so `Partial<typeof DEFAULT_SETTINGS>` would block reassignment.
+    const updates: Record<string, unknown> = {};
     for (const k of allowedKeys) {
-      if (body[k] !== undefined) (updates as any)[k] = body[k];
+      if (body[k] !== undefined) updates[k] = body[k];
     }
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "No valid setting keys provided" }, { status: 400 });
