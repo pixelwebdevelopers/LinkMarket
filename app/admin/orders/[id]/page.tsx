@@ -132,7 +132,7 @@ export default function AdminOrderDetailPage() {
             <SmallField label="Customer paid" value={fmtCents(order.pricePaidCents)} />
             <SmallField label="Admin commission" value={fmtCents(order.adminCommissionCents)} />
             <SmallField label="Reseller earning" value={fmtCents(order.resellerEarningCents)} />
-            <SmallField label="Commission %" value={`${order.commissionPctSnapshot}%`} />
+            <SmallField label="Commission" value={fmtCents(order.commissionCentsSnapshot)} />
             {order.paidAt && <SmallField label="Paid" value={formatDate(order.paidAt)} />}
             {order.publishedAt && <SmallField label="Published" value={formatDate(order.publishedAt)} />}
             {order.completedAt && <SmallField label="Completed" value={formatDate(order.completedAt)} />}

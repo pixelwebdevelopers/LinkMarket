@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 const db = new PrismaClient();
 
 const DEFAULT_SETTINGS = {
-  globalCommissionPct: 20,
+  globalCommissionCents: 1000,
   payoutThresholdCents: 5000,
   currency: "USD",
   platformName: "LinkMarket",

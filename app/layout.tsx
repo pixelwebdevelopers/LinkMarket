@@ -13,8 +13,10 @@ export const metadata: Metadata = {
     "Buy and sell high-quality backlinks. Guest posts and niche edits from curated sites.",
 };
 
+// Default theme: light. Only apply the `dark` class if the user has explicitly
+// chosen dark in localStorage. Run before paint to avoid flash.
 const noFlashScript = `
-(function(){try{var t=localStorage.getItem('theme');var d=t==='light'?false:true;if(d){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}}catch(e){document.documentElement.classList.add('dark');}})();
+(function(){try{var t=localStorage.getItem('theme');if(t==='dark'){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}}catch(e){}})();
 `;
 
 export default function RootLayout({
@@ -23,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: noFlashScript }} />
       </head>

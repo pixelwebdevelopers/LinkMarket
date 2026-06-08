@@ -1,7 +1,9 @@
 import { db } from "@/lib/db";
 
 export const DEFAULT_SETTINGS = {
-  globalCommissionPct: 20, // percent added on top of reseller's base price
+  // Flat amount in cents added on top of a reseller's base price to compute the
+  // customer-facing price. Admin keeps this entire amount as commission.
+  globalCommissionCents: 1000, // $10.00
   payoutThresholdCents: 5000, // $50.00 minimum payout
   currency: "USD" as const,
   platformName: "LinkMarket",

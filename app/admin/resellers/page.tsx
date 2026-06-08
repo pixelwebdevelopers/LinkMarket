@@ -11,7 +11,7 @@ interface Reseller {
   id: string;
   name: string | null;
   email: string;
-  defaultCommissionPct: number | null;
+  defaultCommissionCents: number | null;
   payoutThresholdCents: number | null;
   createdAt: string;
   _count: { sites: number; ordersToFulfill: number };
@@ -85,7 +85,9 @@ export default function AdminResellersPage() {
                     <td className="px-4 py-3 text-zinc-900 dark:text-white font-medium">{r.name ?? "—"}</td>
                     <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{r.email}</td>
                     <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
-                      {r.defaultCommissionPct !== null ? `${r.defaultCommissionPct}%` : "Global default"}
+                      {r.defaultCommissionCents !== null
+                        ? `$${(r.defaultCommissionCents / 100).toFixed(2)}`
+                        : "Global default"}
                     </td>
                     <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
                       {r.payoutThresholdCents !== null ? `$${(r.payoutThresholdCents / 100).toFixed(2)}` : "Global default"}
@@ -107,8 +109,8 @@ function CreateResellerModal({ onClose, onCreated }: { onClose: () => void; onCr
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [defaultCommissionPct, setDefaultCommissionPct] = useState("");
-  const [payoutThresholdCents, setPayoutThresholdCents] = useState("");
+  const [defaultCommissionUsd, setDefaultCommissionUsd] = useState("");
+  const [payoutThresholdUsd, setPayoutThresholdUsd] = useState("");
   const [promoteExisting, setPromoteExisting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -123,8 +125,8 @@ function CreateResellerModal({ onClose, onCreated }: { onClose: () => void; onCr
       password: password || undefined,
       promoteExisting,
     };
-    if (defaultCommissionPct) body.defaultCommissionPct = parseFloat(defaultCommissionPct);
-    if (payoutThresholdCents) body.payoutThresholdCents = parseInt(payoutThresholdCents);
+    if (defaultCommissionUsd) body.defaultCommissionCents = Math.round(parseFloat(defaultCommissionUsd) * 100);
+    if (payoutThresholdUsd) body.payoutThresholdCents = Math.round(parseFloat(payoutThresholdUsd) * 100);
     const res = await fetch("/api/admin/resellers", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -173,19 +175,22 @@ function CreateResellerModal({ onClose, onCreated }: { onClose: () => void; onCr
             />
           )}
           <Input
-            label="Default commission % (optional)"
+            label="Default commission USD (optional)"
             type="number"
-            step="0.5"
-            value={defaultCommissionPct}
-            onChange={(e) => setDefaultCommissionPct(e.target.value)}
-            hint="Overrides global setting just for this reseller"
+            step="0.01"
+            min={0}
+            value={defaultCommissionUsd}
+            onChange={(e) => setDefaultCommissionUsd(e.target.value)}
+            hint="Flat amount in USD added on top of this reseller's base prices. Leave blank to inherit the global setting."
           />
           <Input
-            label="Payout threshold cents (optional)"
+            label="Payout threshold USD (optional)"
             type="number"
-            value={payoutThresholdCents}
-            onChange={(e) => setPayoutThresholdCents(e.target.value)}
-            hint="5000 = $50.00"
+            step="0.01"
+            min={0}
+            value={payoutThresholdUsd}
+            onChange={(e) => setPayoutThresholdUsd(e.target.value)}
+            hint="Minimum balance for this reseller to request payout. Leave blank for global default."
           />
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input

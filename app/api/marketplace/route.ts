@@ -61,18 +61,18 @@ export async function GET(req: NextRequest) {
     ...(type && { type }),
   };
 
-  const [page1, total, globalPct] = await Promise.all([
+  const [page1, total, globalCommission] = await Promise.all([
     db.listing.findMany({
       where,
       skip,
       take: limit,
       orderBy,
       include: {
-        site: { include: { metrics: true, owner: { select: { role: true, defaultCommissionPct: true } } } },
+        site: { include: { metrics: true, owner: { select: { role: true, defaultCommissionCents: true } } } },
       },
     }),
     db.listing.count({ where }),
-    getSetting("globalCommissionPct"),
+    getSetting("globalCommissionCents"),
   ]);
 
   const minPriceCents = Math.round(minPrice * 100);
@@ -80,20 +80,18 @@ export async function GET(req: NextRequest) {
 
   const augmented = page1.map((l) => {
     const ownerIsAdmin = l.site.owner.role === "ADMIN";
-    let pct: number;
+    let commissionCents: number;
     if (ownerIsAdmin) {
-      pct = 0;
-    } else if (l.site.commissionPctOverride !== null && l.site.commissionPctOverride !== undefined) {
-      pct = l.site.commissionPctOverride;
-    } else if (l.site.owner.defaultCommissionPct !== null && l.site.owner.defaultCommissionPct !== undefined) {
-      pct = l.site.owner.defaultCommissionPct;
+      commissionCents = 0;
+    } else if (l.site.commissionCentsOverride !== null && l.site.commissionCentsOverride !== undefined) {
+      commissionCents = l.site.commissionCentsOverride;
+    } else if (l.site.owner.defaultCommissionCents !== null && l.site.owner.defaultCommissionCents !== undefined) {
+      commissionCents = l.site.owner.defaultCommissionCents;
     } else {
-      pct = globalPct;
+      commissionCents = globalCommission;
     }
-    const finalPriceCents = ownerIsAdmin
-      ? l.basePriceCents
-      : l.basePriceCents + Math.round((l.basePriceCents * pct) / 100);
-    return { ...l, finalPriceCents, commissionPctApplied: pct };
+    const finalPriceCents = ownerIsAdmin ? l.basePriceCents : l.basePriceCents + commissionCents;
+    return { ...l, finalPriceCents, commissionCentsApplied: commissionCents };
   });
 
   // Apply price filter in-memory on the page slice. (See header caveat.)

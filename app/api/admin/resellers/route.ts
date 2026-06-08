@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
         id: true,
         name: true,
         email: true,
-        defaultCommissionPct: true,
+        defaultCommissionCents: true,
         payoutThresholdCents: true,
         createdAt: true,
         _count: { select: { sites: true, ordersToFulfill: true } },
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
   try {
     const admin = await requireAdmin();
     const body = await req.json();
-    const { name, email, password, promoteExisting, defaultCommissionPct, payoutThresholdCents } = body;
+    const { name, email, password, promoteExisting, defaultCommissionCents, payoutThresholdCents } = body;
 
     if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 });
 
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
         where: { id: existing.id },
         data: {
           role: "RESELLER",
-          defaultCommissionPct: defaultCommissionPct ?? null,
+          defaultCommissionCents: defaultCommissionCents ?? null,
           payoutThresholdCents: payoutThresholdCents ?? null,
         },
       });
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
         action: "reseller.promoted",
         targetType: "User",
         targetId: existing.id,
-        metadata: { defaultCommissionPct, payoutThresholdCents },
+        metadata: { defaultCommissionCents, payoutThresholdCents },
       });
       await notify({
         userId: existing.id,
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
         email,
         password: hashed,
         role: "RESELLER",
-        defaultCommissionPct: defaultCommissionPct ?? null,
+        defaultCommissionCents: defaultCommissionCents ?? null,
         payoutThresholdCents: payoutThresholdCents ?? null,
       },
     });
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
       action: "reseller.created",
       targetType: "User",
       targetId: user.id,
-      metadata: { defaultCommissionPct, payoutThresholdCents },
+      metadata: { defaultCommissionCents, payoutThresholdCents },
     });
     await notify({
       userId: user.id,

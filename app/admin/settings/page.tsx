@@ -8,13 +8,17 @@ import { PageHeader } from "@/components/panel/PageHeader";
 import { Save, CheckCircle } from "lucide-react";
 
 interface Settings {
-  globalCommissionPct: number;
+  globalCommissionCents: number;
   payoutThresholdCents: number;
   currency: string;
   platformName: string;
   supportEmail: string;
   notifyAdminOnNewOrder: boolean;
 }
+
+// Convert between cents (storage) and USD (UI input).
+const centsToUsd = (c: number) => (c / 100).toFixed(2);
+const usdToCents = (s: string) => Math.round(parseFloat(s || "0") * 100);
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -74,24 +78,29 @@ export default function AdminSettingsPage() {
       />
 
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 space-y-5">
-        <Field label="Global commission (%)" hint="Added on top of a reseller's base price to compute the customer-facing price.">
+        <Field
+          label="Global commission (USD)"
+          hint="Flat amount added on top of a reseller's base price to compute the customer-facing price. Admin keeps this."
+        >
           <Input
             type="number"
-            step="0.5"
+            step="0.01"
             min={0}
-            max={200}
-            value={String(settings.globalCommissionPct)}
-            onChange={(e) => setSettings({ ...settings, globalCommissionPct: parseFloat(e.target.value || "0") })}
+            value={centsToUsd(settings.globalCommissionCents)}
+            onChange={(e) => setSettings({ ...settings, globalCommissionCents: usdToCents(e.target.value) })}
           />
         </Field>
 
-        <Field label="Payout threshold (cents)" hint="Minimum reseller balance required to request a payout. 5000 = $50.00">
+        <Field
+          label="Payout threshold (USD)"
+          hint="Minimum reseller balance required to request a payout."
+        >
           <Input
             type="number"
             min={0}
-            step={100}
-            value={String(settings.payoutThresholdCents)}
-            onChange={(e) => setSettings({ ...settings, payoutThresholdCents: parseInt(e.target.value || "0") })}
+            step="0.01"
+            value={centsToUsd(settings.payoutThresholdCents)}
+            onChange={(e) => setSettings({ ...settings, payoutThresholdCents: usdToCents(e.target.value) })}
           />
         </Field>
 

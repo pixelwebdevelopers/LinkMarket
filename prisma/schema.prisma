@@ -95,7 +95,7 @@ model User {
   role          Role      @default(CUSTOMER)
 
   // reseller-only overrides (null = use global settings)
-  defaultCommissionPct Float?
+  defaultCommissionCents Int?
   payoutThresholdCents Int?
 
   createdAt DateTime @default(now())
@@ -170,8 +170,8 @@ model Site {
   niche           String
   status          SiteStatus @default(PENDING)
   exampleUrl      String?
-  // optional per-site commission override (null = use reseller default or global)
-  commissionPctOverride Float?
+  // optional per-site commission override in cents (null = use reseller default or global)
+  commissionCentsOverride Int?
 
   rejectionReason String?
   approvedAt      DateTime?
@@ -239,7 +239,7 @@ model Order {
   pricePaidCents       Int // what the customer paid (gross)
   adminCommissionCents Int // admin's cut from this order
   resellerEarningCents Int // reseller's cut (0 for admin-owned listings)
-  commissionPctSnapshot Float // effective commission % used at order time
+  commissionCentsSnapshot Int // effective commission (cents) used at order time
 
   // order content
   anchorText  String?

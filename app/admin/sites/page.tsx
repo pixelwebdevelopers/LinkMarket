@@ -23,7 +23,7 @@ interface Site {
   status: "PENDING" | "APPROVED" | "REJECTED" | "SUSPENDED";
   exampleUrl: string | null;
   description: string | null;
-  commissionPctOverride: number | null;
+  commissionCentsOverride: number | null;
   createdAt: string;
   metrics: any;
   owner: { id: string; name: string | null; email: string; role: string };
@@ -256,7 +256,9 @@ export default function AdminSitesPage() {
                       onClick={() => setEditingCommission(s)}
                       className="text-xs text-zinc-700 dark:text-zinc-300 hover:text-indigo-700 dark:hover:text-indigo-300 inline-flex items-center gap-1"
                     >
-                      {s.commissionPctOverride !== null ? `${s.commissionPctOverride}%` : "Default"}
+                      {s.commissionCentsOverride !== null
+                        ? `$${(s.commissionCentsOverride / 100).toFixed(2)}`
+                        : "Default"}
                       <Pencil className="h-3 w-3" />
                     </button>
                   </td>
@@ -375,7 +377,7 @@ export default function AdminSitesPage() {
           site={editingCommission}
           busy={busy === editingCommission.id}
           onClose={() => setEditingCommission(null)}
-          onSubmit={(pct) => act(editingCommission.id, { commissionPctOverride: pct })}
+          onSubmit={(cents) => act(editingCommission.id, { commissionCentsOverride: cents })}
         />
       )}
       {rejectFor && (
@@ -536,23 +538,27 @@ function CommissionModal({
   site: Site;
   busy: boolean;
   onClose: () => void;
-  onSubmit: (pct: number | null) => void;
+  onSubmit: (cents: number | null) => void;
 }) {
-  const [pct, setPct] = useState(site.commissionPctOverride !== null ? String(site.commissionPctOverride) : "");
+  const [usd, setUsd] = useState(
+    site.commissionCentsOverride !== null ? (site.commissionCentsOverride / 100).toFixed(2) : ""
+  );
   return (
     <Modal title={`Commission override · ${getDomainFromUrl(site.url)}`} onClose={onClose}>
       <Input
         type="number"
-        step="0.5"
+        step="0.01"
         min={0}
-        max={200}
-        value={pct}
-        onChange={(e) => setPct(e.target.value)}
-        label="Commission %"
-        hint="Leave blank to inherit from reseller default or global setting."
+        value={usd}
+        onChange={(e) => setUsd(e.target.value)}
+        label="Commission (USD)"
+        hint="Flat amount added on top of the reseller's base price for this site. Leave blank to inherit from reseller default or global setting."
       />
       <div className="flex gap-2">
-        <Button onClick={() => onSubmit(pct === "" ? null : parseFloat(pct))} loading={busy}>
+        <Button
+          onClick={() => onSubmit(usd === "" ? null : Math.round(parseFloat(usd) * 100))}
+          loading={busy}
+        >
           Save
         </Button>
         <Button variant="outline" onClick={onClose}>

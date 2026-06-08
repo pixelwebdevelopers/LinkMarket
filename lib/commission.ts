@@ -2,17 +2,18 @@ import { db } from "@/lib/db";
 import { getSetting } from "@/lib/settings";
 
 export interface CommissionResolution {
-  pct: number;
+  /** Effective commission amount in cents (flat — not a percentage). */
+  commissionCents: number;
   source: "site_override" | "reseller_default" | "global" | "admin_owned";
 }
 
 /**
- * Resolve the effective commission % for a given listing.
+ * Resolve the effective commission (flat cents) for a listing.
  * 3-tier precedence:
- *   1. Site.commissionPctOverride (if set)
- *   2. Owner (User).defaultCommissionPct (if reseller and set)
- *   3. Global setting
- * For admin-owned sites, commission is 0 (admin keeps everything).
+ *   1. Site.commissionCentsOverride (if set)
+ *   2. Owner (User).defaultCommissionCents (if reseller and set)
+ *   3. Global setting (globalCommissionCents)
+ * For admin-owned sites, commission is 0 (admin keeps the entire base price).
  */
 export async function resolveCommissionForListing(listingId: string): Promise<CommissionResolution> {
   const listing = await db.listing.findUnique({
@@ -23,56 +24,59 @@ export async function resolveCommissionForListing(listingId: string): Promise<Co
 
   const owner = listing.site.owner;
 
-  // Admin's own site: no commission split, admin keeps 100% of the customer price.
   if (owner.role === "ADMIN") {
-    return { pct: 0, source: "admin_owned" };
+    return { commissionCents: 0, source: "admin_owned" };
   }
 
-  if (listing.site.commissionPctOverride !== null && listing.site.commissionPctOverride !== undefined) {
-    return { pct: listing.site.commissionPctOverride, source: "site_override" };
+  if (
+    listing.site.commissionCentsOverride !== null &&
+    listing.site.commissionCentsOverride !== undefined
+  ) {
+    return { commissionCents: listing.site.commissionCentsOverride, source: "site_override" };
   }
 
-  if (owner.defaultCommissionPct !== null && owner.defaultCommissionPct !== undefined) {
-    return { pct: owner.defaultCommissionPct, source: "reseller_default" };
+  if (owner.defaultCommissionCents !== null && owner.defaultCommissionCents !== undefined) {
+    return { commissionCents: owner.defaultCommissionCents, source: "reseller_default" };
   }
 
-  const global = await getSetting("globalCommissionPct");
-  return { pct: global, source: "global" };
+  const global = await getSetting("globalCommissionCents");
+  return { commissionCents: global, source: "global" };
 }
 
 export interface PriceSplit {
   basePriceCents: number;
-  commissionPct: number;
+  commissionCents: number;
   adminCommissionCents: number;
   resellerEarningCents: number;
   customerPriceCents: number;
 }
 
 /**
- * Given a listing's base price and the effective commission %,
+ * Given a listing's base price and the effective commission (cents),
  * compute the customer-facing price and the split.
- * For admin-owned listings, the entire price is "admin commission" (admin's revenue),
- * and reseller earning is 0.
+ *   - Customer pays: base + commission
+ *   - Admin keeps:   commission (always)
+ *   - Reseller earns: base (always — they set base for what they want to earn)
+ *   - For admin-owned: commission is 0, admin "earns" the base as their revenue.
  */
 export function computeSplit(
   basePriceCents: number,
-  commissionPct: number,
+  commissionCents: number,
   isAdminOwned: boolean
 ): PriceSplit {
   if (isAdminOwned) {
     return {
       basePriceCents,
-      commissionPct: 0,
+      commissionCents: 0,
       adminCommissionCents: basePriceCents,
       resellerEarningCents: 0,
       customerPriceCents: basePriceCents,
     };
   }
-  const commissionCents = Math.round((basePriceCents * commissionPct) / 100);
   const customerPriceCents = basePriceCents + commissionCents;
   return {
     basePriceCents,
-    commissionPct,
+    commissionCents,
     adminCommissionCents: commissionCents,
     resellerEarningCents: basePriceCents,
     customerPriceCents,
@@ -82,7 +86,9 @@ export function computeSplit(
 /**
  * One-shot helper: resolve commission for a listing and return the price split.
  */
-export async function priceListing(listingId: string): Promise<PriceSplit & { source: CommissionResolution["source"] }> {
+export async function priceListing(
+  listingId: string
+): Promise<PriceSplit & { source: CommissionResolution["source"] }> {
   const listing = await db.listing.findUnique({
     where: { id: listingId },
     include: { site: { include: { owner: true } } },
@@ -91,6 +97,6 @@ export async function priceListing(listingId: string): Promise<PriceSplit & { so
 
   const isAdminOwned = listing.site.owner.role === "ADMIN";
   const resolution = await resolveCommissionForListing(listingId);
-  const split = computeSplit(listing.basePriceCents, resolution.pct, isAdminOwned);
+  const split = computeSplit(listing.basePriceCents, resolution.commissionCents, isAdminOwned);
   return { ...split, source: resolution.source };
 }

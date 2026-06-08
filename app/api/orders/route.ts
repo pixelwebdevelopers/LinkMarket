@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
         pricePaidCents: split.customerPriceCents,
         adminCommissionCents: split.adminCommissionCents,
         resellerEarningCents: split.resellerEarningCents,
-        commissionPctSnapshot: split.commissionPct,
+        commissionCentsSnapshot: split.commissionCents,
         anchorText,
         targetUrl,
         notes,

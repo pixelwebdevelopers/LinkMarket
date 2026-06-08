@@ -32,12 +32,15 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Light validation
-    if (updates.globalCommissionPct !== undefined) {
-      const v = Number(updates.globalCommissionPct);
-      if (!Number.isFinite(v) || v < 0 || v > 200) {
-        return NextResponse.json({ error: "globalCommissionPct must be 0–200" }, { status: 400 });
+    if (updates.globalCommissionCents !== undefined) {
+      const v = Number(updates.globalCommissionCents);
+      if (!Number.isInteger(v) || v < 0) {
+        return NextResponse.json(
+          { error: "globalCommissionCents must be a non-negative integer (cents)" },
+          { status: 400 }
+        );
       }
-      updates.globalCommissionPct = v;
+      updates.globalCommissionCents = v;
     }
     if (updates.payoutThresholdCents !== undefined) {
       const v = Number(updates.payoutThresholdCents);

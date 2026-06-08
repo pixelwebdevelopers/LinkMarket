@@ -43,7 +43,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const admin = await requireAdmin();
     const { id } = await params;
     const body = await req.json();
-    const { status, rejectionReason, commissionPctOverride, ...rest } = body;
+    const { status, rejectionReason, commissionCentsOverride, ...rest } = body;
 
     const site = await db.site.findUnique({ where: { id }, select: { ownerId: true, name: true } });
     if (!site) return NextResponse.json({ error: "Site not found" }, { status: 404 });
@@ -66,14 +66,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     // Commission override
-    if (commissionPctOverride !== undefined) {
-      if (commissionPctOverride === null) dataToUpdate.commissionPctOverride = null;
+    if (commissionCentsOverride !== undefined) {
+      if (commissionCentsOverride === null) dataToUpdate.commissionCentsOverride = null;
       else {
-        const v = Number(commissionPctOverride);
-        if (!Number.isFinite(v) || v < 0 || v > 200) {
-          return NextResponse.json({ error: "commissionPctOverride must be 0–200" }, { status: 400 });
+        const v = Number(commissionCentsOverride);
+        if (!Number.isInteger(v) || v < 0) {
+          return NextResponse.json(
+            { error: "commissionCentsOverride must be a non-negative integer (cents)" },
+            { status: 400 }
+          );
         }
-        dataToUpdate.commissionPctOverride = v;
+        dataToUpdate.commissionCentsOverride = v;
       }
     }
 
