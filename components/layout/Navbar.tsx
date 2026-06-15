@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -10,8 +11,8 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, ShoppingCart, Globe, LogOut,
-  ChevronDown, Menu, X, Zap, Shield, Sparkles, LogIn,
-  Wallet, Building2, Users, UserCog, BarChart3, Activity, Settings, AlertTriangle,
+  ChevronDown, Menu, X, Shield, Sparkles, LogIn,
+  Wallet, Building2, Users, UserCog, BarChart3, Activity, Settings, AlertTriangle, LifeBuoy,
 } from "lucide-react";
 
 export function Navbar() {
@@ -71,12 +72,17 @@ export function Navbar() {
           <Link href="/" className="flex items-center gap-2.5 group shrink-0">
             <div className="relative">
               <div className="absolute inset-0 rounded-xl bg-indigo-500 blur-md opacity-50 group-hover:opacity-80 transition-opacity" />
-              <div className="relative h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
-                <Zap className="h-5 w-5 text-white" fill="currentColor" />
-              </div>
+              <Image
+                src="/logo.png"
+                alt="Rankistic"
+                width={36}
+                height={36}
+                priority
+                className="relative h-9 w-9 rounded-xl bg-white object-contain p-1 shadow-lg shadow-indigo-500/40 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6"
+              />
             </div>
             <span className="font-bold text-lg text-zinc-900 dark:text-white tracking-tight">
-              Link<span className="text-indigo-700 dark:text-indigo-400">Market</span>
+              Rankistic
             </span>
           </Link>
 
@@ -135,6 +141,7 @@ export function Navbar() {
                       {[
                         { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
                         { href: "/orders", label: "My Orders", icon: ShoppingCart },
+                        { href: "/support", label: "Support", icon: LifeBuoy },
                         ...(role === "RESELLER" ? [
                           { href: "/reseller", label: "My Sites", icon: Globe },
                           { href: "/reseller/earnings", label: "Earnings", icon: Wallet },

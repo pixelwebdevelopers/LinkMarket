@@ -35,6 +35,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!isValid) return null;
 
+        // Block unverified accounts — but only when an email transport is
+        // configured (so verification could actually have been completed).
+        // Without email, accounts are auto-verified at signup, so this is a
+        // no-op until SMTP/Resend is set up.
+        const emailEnabled = Boolean(process.env.SMTP_HOST || process.env.RESEND_API_KEY);
+        if (emailEnabled && !user.emailVerified) return null;
+
         return user;
       },
     }),

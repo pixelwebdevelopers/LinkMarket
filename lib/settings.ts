@@ -6,8 +6,8 @@ export const DEFAULT_SETTINGS = {
   globalCommissionCents: 1000, // $10.00
   payoutThresholdCents: 5000, // $50.00 minimum payout
   currency: "USD" as const,
-  platformName: "LinkMarket",
-  supportEmail: "support@linkmarket.io",
+  platformName: "Rankistic",
+  supportEmail: "support@rankistic.com",
   notifyAdminOnNewOrder: true,
 } as const;
 

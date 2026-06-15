@@ -161,7 +161,7 @@ export default function HomePage() {
                 <span className="h-3 w-3 rounded-full bg-emerald-500/80" />
                 <div className="ml-3 flex-1 h-6 rounded-md bg-zinc-200/70 dark:bg-zinc-800/70 flex items-center px-3">
                   <Globe className="h-3 w-3 text-zinc-500 mr-2" />
-                  <span className="text-[11px] text-zinc-500">linkmarket.io/marketplace</span>
+                  <span className="text-[11px] text-zinc-500">app.rankistic.com/marketplace</span>
                 </div>
               </div>
               {/* sample listing rows */}
@@ -319,7 +319,7 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-grid pointer-events-none opacity-50" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <Reveal className="text-center mb-14">
-            <span className="eyebrow mb-5">Why LinkMarket</span>
+            <span className="eyebrow mb-5">Why Rankistic</span>
             <h2 className="text-3xl sm:text-5xl font-bold text-zinc-900 dark:text-white mt-5 mb-4 tracking-tight">
               Everything you need to <span className="gradient-text">rank faster</span>
             </h2>
@@ -454,7 +454,7 @@ export default function HomePage() {
                   Ready to <span className="gradient-text">Rank Higher?</span>
                 </h2>
                 <p className="text-zinc-700 dark:text-zinc-300 text-lg max-w-xl mx-auto mb-10">
-                  Join 1,000+ SEO professionals already using LinkMarket to build better links.
+                  Join 1,000+ SEO professionals already using Rankistic to build better links.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   <Magnetic className="w-full sm:w-auto">

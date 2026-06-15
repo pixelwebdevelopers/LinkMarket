@@ -8,7 +8,7 @@ import { Navbar } from "@/components/layout/Navbar";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "LinkMarket – The #1 Link Building Marketplace",
+  title: "Rankistic – The #1 Link Building Marketplace",
   description:
     "Buy and sell high-quality backlinks. Guest posts and niche edits from curated sites.",
 };

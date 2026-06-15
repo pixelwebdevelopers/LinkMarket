@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
-import { Zap, Send, ArrowUpRight, Globe, Shield, Clock } from "lucide-react";
+import { Send, ArrowUpRight, Globe, Shield, Clock } from "lucide-react";
 
 const columns = [
   {
     title: "Product",
     links: [
       { label: "Marketplace", href: "/marketplace" },
-      { label: "Why LinkMarket", href: "/#features" },
+      { label: "Why Rankistic", href: "/#features" },
       { label: "Link Types", href: "/#link-types" },
       { label: "Reviews", href: "/#testimonials" },
     ],
@@ -29,6 +30,7 @@ const columns = [
       { label: "Create Account", href: "/register" },
       { label: "Dashboard", href: "/dashboard" },
       { label: "My Orders", href: "/orders" },
+      { label: "Support", href: "/support" },
     ],
   },
 ];
@@ -95,12 +97,16 @@ export function Footer() {
             <Link href="/" className="flex items-center gap-2.5 group w-fit">
               <div className="relative">
                 <div className="absolute inset-0 rounded-xl bg-indigo-500 blur-md opacity-40 group-hover:opacity-70 transition-opacity" />
-                <div className="relative h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/40 transition-transform group-hover:scale-110">
-                  <Zap className="h-5 w-5 text-white" fill="currentColor" />
-                </div>
+                <Image
+                  src="/logo.png"
+                  alt="Rankistic"
+                  width={36}
+                  height={36}
+                  className="relative h-9 w-9 rounded-xl bg-white object-contain p-1 shadow-lg shadow-indigo-500/40 transition-transform group-hover:scale-110"
+                />
               </div>
               <span className="font-bold text-lg text-zinc-900 dark:text-white tracking-tight">
-                Link<span className="text-indigo-700 dark:text-indigo-400">Market</span>
+                Rankistic
               </span>
             </Link>
             <p className="text-sm text-zinc-500 mt-4 leading-relaxed max-w-xs">
@@ -183,11 +189,12 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6 border-t border-zinc-200/80 dark:border-zinc-800/80">
           <p className="text-zinc-400 dark:text-zinc-600 text-sm order-2 sm:order-1">
-            © {new Date().getFullYear()} LinkMarket. All rights reserved.
+            © {new Date().getFullYear()} Rankistic. All rights reserved.
           </p>
           <div className="flex items-center gap-6 text-sm text-zinc-500 order-1 sm:order-2">
             <Link href="/#features" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Privacy</Link>
             <Link href="/#features" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Terms</Link>
+            <Link href="/support" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Support</Link>
             <Link href="/marketplace" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Marketplace</Link>
           </div>
         </div>

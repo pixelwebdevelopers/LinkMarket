@@ -5,12 +5,21 @@ import { notify } from "@/lib/notifications";
 import { logAudit } from "@/lib/audit";
 import { writeOrderCompletedLedger, writeOrderRefundedLedger } from "@/lib/ledger";
 import { stripe, isStripeConfigured } from "@/lib/stripe";
+import { reconcileOrderPayment } from "@/lib/payments";
 import type { OrderStatus } from "@prisma/client";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireUser();
     const { id } = await params;
+
+    // Verify-on-return: if this order is still awaiting payment, reconcile it
+    // against Stripe before reading. This is the primary path that settles the
+    // returning customer's order the moment they land back on the order page.
+    const pre = await db.order.findUnique({ where: { id }, select: { status: true } });
+    if (pre?.status === "PENDING_PAYMENT") {
+      await reconcileOrderPayment(id);
+    }
 
     const order = await db.order.findUnique({
       where: { id },

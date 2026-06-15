@@ -1,45 +1,103 @@
 import { Resend } from "resend";
+import nodemailer, { type Transporter } from "nodemailer";
 import { getSetting } from "@/lib/settings";
 
-const apiKey = process.env.RESEND_API_KEY;
-const fromAddress = process.env.EMAIL_FROM ?? "LinkMarket <notifications@linkmarket.io>";
+const fromAddress = process.env.EMAIL_FROM ?? "Rankistic <notifications@rankistic.com>";
 
-const resend = apiKey ? new Resend(apiKey) : null;
+// ── Transport selection ──────────────────────────────────────────────────────
+// Priority: SMTP (free, "PHP mail"-style) → Resend (API) → disabled (log only).
+// To use SMTP, set SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS in env. Any free
+// provider works (Gmail app password, Brevo, Mailtrap, Mailgun, etc.).
+const smtpHost = process.env.SMTP_HOST;
+const resendApiKey = process.env.RESEND_API_KEY;
+
+let smtpTransport: Transporter | null = null;
+function getSmtpTransport(): Transporter | null {
+  if (!smtpHost) return null;
+  if (!smtpTransport) {
+    const port = Number(process.env.SMTP_PORT ?? 587);
+    smtpTransport = nodemailer.createTransport({
+      host: smtpHost,
+      port,
+      // true for 465 (implicit TLS), false for 587/25 (STARTTLS)
+      secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === "true" : port === 465,
+      auth:
+        process.env.SMTP_USER || process.env.SMTP_PASS
+          ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+          : undefined,
+    });
+  }
+  return smtpTransport;
+}
+
+const resend = resendApiKey ? new Resend(resendApiKey) : null;
+
+/** Which transport is active — handy for diagnostics / the support page. */
+export function emailTransport(): "smtp" | "resend" | "disabled" {
+  if (smtpHost) return "smtp";
+  if (resend) return "resend";
+  return "disabled";
+}
 
 export interface SendEmailInput {
   to: string | string[];
   subject: string;
   html: string;
   text?: string;
+  replyTo?: string;
 }
 
 /**
- * Send an email via Resend.
- * Returns true on success, false on failure or if email is disabled (no API key).
- * Never throws — callers should not depend on email for business logic.
+ * Send an email via SMTP (preferred) or Resend.
+ * Returns true on success, false on failure or if email is disabled.
+ * Never throws — callers must not depend on email for business logic.
  */
 export async function sendEmail(input: SendEmailInput): Promise<boolean> {
-  if (!resend) {
-    console.warn("[email] RESEND_API_KEY not set — skipping send to", input.to);
-    return false;
-  }
-  try {
-    const result = await resend.emails.send({
-      from: fromAddress,
-      to: input.to,
-      subject: input.subject,
-      html: input.html,
-      text: input.text,
-    });
-    if (result.error) {
-      console.error("[email] resend error", result.error);
+  const transport = getSmtpTransport();
+
+  // 1. SMTP (nodemailer)
+  if (transport) {
+    try {
+      await transport.sendMail({
+        from: fromAddress,
+        to: Array.isArray(input.to) ? input.to.join(", ") : input.to,
+        subject: input.subject,
+        html: input.html,
+        text: input.text,
+        replyTo: input.replyTo,
+      });
+      return true;
+    } catch (err) {
+      console.error("[email] smtp send failed", err);
       return false;
     }
-    return true;
-  } catch (err) {
-    console.error("[email] send failed", err);
-    return false;
   }
+
+  // 2. Resend (API fallback)
+  if (resend) {
+    try {
+      const result = await resend.emails.send({
+        from: fromAddress,
+        to: input.to,
+        subject: input.subject,
+        html: input.html,
+        text: input.text,
+        replyTo: input.replyTo,
+      });
+      if (result.error) {
+        console.error("[email] resend error", result.error);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error("[email] resend send failed", err);
+      return false;
+    }
+  }
+
+  // 3. Disabled — no transport configured
+  console.warn("[email] no SMTP_HOST or RESEND_API_KEY set — skipping send to", input.to);
+  return false;
 }
 
 /** Wrap body content in a minimal branded HTML shell. */

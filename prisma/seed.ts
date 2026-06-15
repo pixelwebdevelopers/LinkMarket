@@ -8,8 +8,8 @@ const DEFAULT_SETTINGS = {
   globalCommissionCents: 1000,
   payoutThresholdCents: 5000,
   currency: "USD",
-  platformName: "LinkMarket",
-  supportEmail: "support@linkmarket.io",
+  platformName: "Rankistic",
+  supportEmail: "support@rankistic.com",
   notifyAdminOnNewOrder: true,
 };
 
@@ -24,7 +24,7 @@ async function main() {
   }
   console.log("  ✓ Settings seeded");
 
-  const adminEmail = process.env.SEED_ADMIN_EMAIL ?? "admin@linkmarket.io";
+  const adminEmail = process.env.SEED_ADMIN_EMAIL ?? "admin@rankistic.com";
   const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? "admin12345";
   const existingAdmin = await db.user.findUnique({ where: { email: adminEmail } });
   if (!existingAdmin) {
@@ -35,6 +35,7 @@ async function main() {
         email: adminEmail,
         password: hashed,
         role: "ADMIN",
+        emailVerified: new Date(), // seeded admin is pre-verified
       },
     });
     console.log(`  ✓ Admin user created: ${adminEmail} / ${adminPassword}`);

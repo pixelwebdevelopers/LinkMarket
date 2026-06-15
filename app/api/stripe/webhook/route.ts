@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe, STRIPE_WEBHOOK_SECRET } from "@/lib/stripe";
 import { db } from "@/lib/db";
-import { writeOrderPaidLedger, writeOrderRefundedLedger } from "@/lib/ledger";
-import { notify, notifyAdmins } from "@/lib/notifications";
-import { getSetting } from "@/lib/settings";
+import { writeOrderRefundedLedger } from "@/lib/ledger";
+import { notify } from "@/lib/notifications";
+import { settleOrderPaid } from "@/lib/payments";
 import type Stripe from "stripe";
 
 // Stripe requires the raw body to verify the signature.
@@ -80,64 +80,8 @@ async function handlePaymentIntentSucceeded(pi: Stripe.PaymentIntent) {
   const chargeId =
     typeof pi.latest_charge === "string" ? pi.latest_charge : pi.latest_charge?.id ?? null;
 
-  // Atomic claim: only the call that flips PENDING_PAYMENT -> PAID proceeds.
-  // Concurrent/duplicate webhook deliveries return updated.count === 0 and exit.
-  const claim = await db.order.updateMany({
-    where: { id: orderId, status: "PENDING_PAYMENT" },
-    data: {
-      status: "PAID",
-      paidAt: new Date(),
-      stripePaymentIntentId: pi.id,
-      stripeChargeId: chargeId,
-    },
-  });
-  if (claim.count === 0) {
-    // Already processed (or order not found / in another terminal state).
-    return;
-  }
-
-  const order = await db.order.findUnique({
-    where: { id: orderId },
-    include: { listing: { include: { site: true } }, customer: true, fulfiller: true },
-  });
-  if (!order) return;
-
-  await db.$transaction(async (tx) => {
-    await writeOrderPaidLedger(order.id, tx);
-  });
-
-  // Notify the customer
-  await notify({
-    userId: order.customerId,
-    type: "ORDER_PAID",
-    title: "Payment received",
-    body: `Your order on ${order.listing.site.name} has been paid. The publisher will start work shortly.`,
-    link: `/orders/${order.id}`,
-    email: true,
-  });
-
-  // Notify the fulfiller (admin or reseller)
-  if (order.fulfillerId !== order.customerId) {
-    await notify({
-      userId: order.fulfillerId,
-      type: "ORDER_PAID",
-      title: "New paid order",
-      body: `Order ${order.id.slice(-8).toUpperCase()} for ${order.listing.site.name} has been paid and is ready to fulfill.`,
-      link: `/orders/${order.id}`,
-      email: true,
-    });
-  }
-
-  // Also notify admins if enabled and the fulfiller isn't already an admin
-  const notifyAdmin = await getSetting("notifyAdminOnNewOrder");
-  if (notifyAdmin && order.fulfiller.role !== "ADMIN") {
-    await notifyAdmins({
-      type: "ORDER_PAID",
-      title: "New paid order on the platform",
-      body: `Order ${order.id.slice(-8).toUpperCase()} placed by ${order.customer.email} for $${(order.pricePaidCents / 100).toFixed(2)}`,
-      link: `/admin/orders/${order.id}`,
-    });
-  }
+  // Shared, idempotent settle logic (also used by verify-on-return reconcile).
+  await settleOrderPaid(orderId, { paymentIntentId: pi.id, chargeId });
 }
 
 async function handlePaymentFailed(pi: Stripe.PaymentIntent) {

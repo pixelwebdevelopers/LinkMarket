@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import type { ListingType } from "@prisma/client";
 import { getSetting } from "@/lib/settings";
+import { requireUser, AuthError } from "@/lib/authz";
 
 /**
- * Public marketplace endpoint.
+ * Marketplace listings endpoint. Requires an authenticated account.
  *
  * Returns listings with a `finalPriceCents` computed from the per-listing
  * commission resolution (site override → reseller default → global). The
@@ -19,6 +20,14 @@ import { getSetting } from "@/lib/settings";
  * materialise finalPriceCents into a generated column.)
  */
 export async function GET(req: NextRequest) {
+  // Marketplace browsing requires an account.
+  try {
+    await requireUser();
+  } catch (err) {
+    if (err instanceof AuthError) return NextResponse.json({ error: err.message }, { status: err.status });
+    throw err;
+  }
+
   const { searchParams } = new URL(req.url);
 
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));

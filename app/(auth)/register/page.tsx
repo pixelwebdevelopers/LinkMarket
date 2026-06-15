@@ -4,15 +4,17 @@ import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Zap, ArrowRight } from "lucide-react";
+import { ArrowRight, MailCheck } from "lucide-react";
 
 function RegisterForm() {
   const router = useRouter();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [needsVerify, setNeedsVerify] = useState(false);
 
   function update(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -29,9 +31,34 @@ function RegisterForm() {
     });
     const data = await res.json();
     if (!res.ok) { setError(data.error ?? "Registration failed."); setLoading(false); return; }
+
+    // When email verification is required, don't sign in — ask them to confirm
+    // their email first. Otherwise (email disabled) sign in immediately.
+    if (data.verified === false) {
+      setNeedsVerify(true);
+      setLoading(false);
+      return;
+    }
     await signIn("credentials", { email: form.email, password: form.password, redirect: false });
     router.push("/dashboard");
     router.refresh();
+  }
+
+  if (needsVerify) {
+    return (
+      <div className="text-center py-2">
+        <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
+          <MailCheck className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+        </div>
+        <p className="text-zinc-900 dark:text-white font-semibold mb-1">Confirm your email</p>
+        <p className="text-sm text-zinc-500 mb-5">
+          We sent a verification link to <span className="font-medium text-zinc-700 dark:text-zinc-300">{form.email}</span>. Click it to activate your account, then sign in.
+        </p>
+        <Link href="/login">
+          <Button variant="outline" className="w-full">Go to sign in</Button>
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -43,7 +70,7 @@ function RegisterForm() {
       )}
       <p className="text-xs text-zinc-500 mb-5">
         Registering creates a customer account. Reseller accounts are created by our team — contact us at{" "}
-        <a href="mailto:support@linkmarket.io" className="text-indigo-700 dark:text-indigo-400">support@linkmarket.io</a>{" "}
+        <a href="mailto:support@rankistic.com" className="text-indigo-700 dark:text-indigo-400">support@rankistic.com</a>{" "}
         to apply.
       </p>
 
@@ -77,10 +104,8 @@ export default function RegisterPage() {
       <div className="relative w-full max-w-md animate-fade-in-up">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="h-9 w-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-              <Zap className="h-5 w-5 text-white" />
-            </div>
-            <span className="font-bold text-xl text-zinc-900 dark:text-white">Link<span className="text-indigo-700 dark:text-indigo-400">Market</span></span>
+            <Image src="/logo.png" alt="Rankistic" width={36} height={36} className="h-9 w-9 rounded-xl bg-white object-contain p-1 shadow-lg shadow-indigo-500/30" />
+            <span className="font-bold text-xl text-zinc-900 dark:text-white">Rankistic</span>
           </Link>
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Create your account</h1>
           <p className="text-zinc-600 dark:text-zinc-400 text-sm mt-2">Free to join. No subscription required.</p>

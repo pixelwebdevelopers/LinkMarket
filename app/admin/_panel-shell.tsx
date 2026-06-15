@@ -12,6 +12,7 @@ import {
   Activity,
   Settings,
   UserCog,
+  Upload,
 } from "lucide-react";
 
 const nav: PanelNavSection[] = [
@@ -25,6 +26,7 @@ const nav: PanelNavSection[] = [
     title: "Marketplace",
     items: [
       { href: "/admin/sites", label: "Sites", icon: Globe },
+      { href: "/admin/sites/bulk", label: "Bulk import", icon: Upload, exact: true },
       { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
       { href: "/admin/disputes", label: "Disputes", icon: AlertTriangle },
     ],

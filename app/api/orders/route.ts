@@ -4,6 +4,7 @@ import { requireUser, AuthError } from "@/lib/authz";
 import { priceListing } from "@/lib/commission";
 import { notify, notifyAdmins } from "@/lib/notifications";
 import { getSetting } from "@/lib/settings";
+import { reconcileOrders } from "@/lib/payments";
 
 /**
  * GET /api/orders — list orders scoped by role:
@@ -28,6 +29,20 @@ export async function GET(req: NextRequest) {
     } else {
       where.customerId = user.id;
     }
+
+    // Verify-on-return safety net: before listing, sweep any PENDING_PAYMENT
+    // orders in this user's scope and reconcile them against Stripe. This is
+    // what catches a customer who paid but never returned to the order page —
+    // the next time they (or an admin, who sees all orders) open a list, the
+    // order settles. Bounded to the most recent pending orders to cap API use.
+    const pending = await db.order.findMany({
+      where: { ...where, status: "PENDING_PAYMENT" },
+      select: { id: true },
+      orderBy: { createdAt: "desc" },
+      take: 25,
+    });
+    await reconcileOrders(pending.map((o) => o.id));
+
     if (status) where.status = status;
 
     const [orders, total] = await Promise.all([

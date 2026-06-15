@@ -117,6 +117,8 @@ model User {
   metricUpdates   SiteMetrics[]    @relation("MetricUpdater")
   approvedSites   Site[]           @relation("SiteApprover")
   blacklist       Blacklist[]
+  passwordResetTokens PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
 }
 
 // ─── NextAuth Models ──────────────────────────────────────────────────────────
@@ -155,6 +157,38 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// ─── PasswordResetToken ───────────────────────────────────────────────────────
+// We store only a SHA-256 hash of the token; the raw token is emailed once and
+// never persisted. A token is single-use (usedAt) and short-lived (expires).
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expires   DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ─── EmailVerificationToken ───────────────────────────────────────────────────
+// Same pattern as PasswordResetToken: only the SHA-256 hash is stored, the raw
+// token is emailed once, single-use (usedAt) and short-lived (expires).
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expires   DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // ─── Site ─────────────────────────────────────────────────────────────────────
