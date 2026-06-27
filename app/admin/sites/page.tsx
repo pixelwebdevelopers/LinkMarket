@@ -26,6 +26,7 @@ interface Site {
   commissionCentsOverride: number | null;
   createdAt: string;
   metrics: any;
+  listings?: any[];
   owner: { id: string; name: string | null; email: string; role: string };
 }
 
