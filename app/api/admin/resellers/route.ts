@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
         id: true,
         name: true,
         email: true,
+        isDisabled: true,
         defaultCommissionCents: true,
         payoutThresholdCents: true,
         createdAt: true,

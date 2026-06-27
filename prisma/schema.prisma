@@ -99,6 +99,7 @@ model User {
   image         String?
   password      String?
   role          Role      @default(CUSTOMER)
+  isDisabled    Boolean   @default(false)
 
   // reseller-only overrides (null = use global settings)
   defaultCommissionCents Int?

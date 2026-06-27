@@ -80,7 +80,7 @@ export default function EarningsPage() {
           <>
             <Link href="/reseller/bank-accounts">
               <Button variant="outline" size="sm">
-                Bank accounts ({banks.length})
+                Payout methods ({banks.length})
               </Button>
             </Link>
             <Button
@@ -89,7 +89,7 @@ export default function EarningsPage() {
               disabled={!canRequest || banks.length === 0}
               title={
                 banks.length === 0
-                  ? "Add a bank account first"
+                  ? "Add a payout method first"
                   : !canRequest
                   ? `Minimum payout is ${fmtCents(data.thresholdCents)}`
                   : ""
@@ -101,15 +101,16 @@ export default function EarningsPage() {
         }
       />
 
-        {banks.length === 0 && (
-          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-sm rounded-xl px-4 py-3">
-            Add a bank account on the{" "}
-            <Link href="/reseller/bank-accounts" className="underline">
-              bank accounts page
-            </Link>{" "}
-            before requesting your first payout.
-          </div>
-        )}
+        <div className="space-y-6">
+          {banks.length === 0 && (
+            <div className="bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-sm rounded-xl px-4 py-3">
+              Add a payout method on the{" "}
+              <Link href="/reseller/bank-accounts" className="underline">
+                payout methods page
+              </Link>{" "}
+              before requesting your first payout.
+            </div>
+          )}
 
         {/* Balance cards */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -137,7 +138,7 @@ export default function EarningsPage() {
               <table className="w-full text-sm">
                 <thead className="border-b border-zinc-200 dark:border-zinc-800">
                   <tr>
-                    {["Amount", "Status", "Bank", "Requested", "Processed", "Reference"].map((h) => (
+                    {["Amount", "Status", "Payout Method", "Requested", "Processed", "Reference"].map((h) => (
                       <th
                         key={h}
                         className="text-left px-4 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wide"
@@ -235,9 +236,10 @@ export default function EarningsPage() {
           }}
         />
       )}
-    </PageContainer>
-  );
-}
+        </div>
+      </PageContainer>
+    );
+  }
 
 function Card({ label, value, accent }: { label: string; value: string; accent: string }) {
   const colors: Record<string, string> = {
@@ -334,7 +336,7 @@ function PayoutRequestModal({
             >
               {banks.map((b) => (
                 <option key={b.id} value={b.id}>
-                  {b.label} {b.isDefault && "(default)"} — {b.bankName ?? b.accountName}
+                  {b.label} {b.isDefault && "(default)"} — {b.methodType === "PAYPAL" ? `PayPal (${b.paypalEmail})` : b.methodType === "STRIPE" ? `Stripe (${b.stripeEmail})` : b.accountName}
                 </option>
               ))}
             </select>

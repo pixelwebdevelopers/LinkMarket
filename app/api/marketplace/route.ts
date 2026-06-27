@@ -42,6 +42,7 @@ export async function GET(req: NextRequest) {
   const maxPrice = parseFloat(searchParams.get("maxPrice") ?? "99999");
   const minTraffic = parseInt(searchParams.get("minTraffic") ?? "0");
   const language = searchParams.get("language");
+  const q = searchParams.get("q")?.trim();
   const country = searchParams.get("country");
   const sortBy = searchParams.get("sortBy") ?? "price_asc";
 
@@ -59,6 +60,7 @@ export async function GET(req: NextRequest) {
     isActive: true,
     site: {
       status: "APPROVED" as const,
+      ...(q && { url: { contains: q } }),
       ...(niche && { niche: { contains: niche } }),
       ...(language && { language: { equals: language } }),
       ...(country && { country: { equals: country } }),

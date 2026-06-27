@@ -75,7 +75,7 @@ export default function BankAccountsPage() {
     <PageContainer>
       <PageHeader
         title="Payout Methods"
-        description="Choose how you'd like to receive payouts from the platform (PayPal, Stripe, or Bank Wire)."
+        description="Choose how you'd like to receive payouts from the platform (PayPal or Stripe)."
         actions={
           <Button size="sm" onClick={() => setShowAdd(true)}>
             <PlusCircle className="h-4 w-4" /> Add method
@@ -227,8 +227,8 @@ function AddModal({ onClose, onAdded }: { onClose: () => void; onAdded: () => vo
             <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block mb-1.5">
               Payout Method Type
             </label>
-            <div className="grid grid-cols-3 gap-2">
-              {(["PAYPAL", "STRIPE", "BANK_WIRE"] as const).map((t) => (
+            <div className="grid grid-cols-2 gap-2">
+              {(["PAYPAL", "STRIPE"] as const).map((t) => (
                 <button
                   key={t}
                   type="button"
@@ -239,14 +239,14 @@ function AddModal({ onClose, onAdded }: { onClose: () => void; onAdded: () => vo
                       : "border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
                   }`}
                 >
-                  {t.replace("_", " ")}
+                  {t}
                 </button>
               ))}
             </div>
           </div>
 
           <Input
-            label="Label (e.g. PayPal Main, Bank Account)"
+            label="Label (e.g. PayPal Main, Stripe Primary)"
             value={form.label}
             onChange={(e) => set("label", e.target.value)}
             required
@@ -280,32 +280,6 @@ function AddModal({ onClose, onAdded }: { onClose: () => void; onAdded: () => vo
               required
               placeholder="e.g. stripe@example.com or acct_..."
             />
-          )}
-
-          {form.methodType === "BANK_WIRE" && (
-            <div className="space-y-4">
-              <div className="grid sm:grid-cols-2 gap-3">
-                <Input label="Bank name" value={form.bankName} onChange={(e) => set("bankName", e.target.value)} />
-                <Input label="Country" value={form.country} onChange={(e) => set("country", e.target.value)} />
-              </div>
-              <div className="grid sm:grid-cols-2 gap-3">
-                <Input
-                  label="Account number"
-                  value={form.accountNumber}
-                  onChange={(e) => set("accountNumber", e.target.value)}
-                  hint="US: ACH account number"
-                />
-                <Input
-                  label="Routing / ABA"
-                  value={form.routingNumber}
-                  onChange={(e) => set("routingNumber", e.target.value)}
-                />
-              </div>
-              <div className="grid sm:grid-cols-2 gap-3">
-                <Input label="IBAN" value={form.iban} onChange={(e) => set("iban", e.target.value)} hint="EU and many others" />
-                <Input label="SWIFT / BIC" value={form.swift} onChange={(e) => set("swift", e.target.value)} />
-              </div>
-            </div>
           )}
 
           <label className="flex items-center gap-2 text-sm cursor-pointer pt-2">

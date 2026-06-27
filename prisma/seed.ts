@@ -1,4 +1,4 @@
-import { PrismaClient, Role, SiteStatus, ListingType, OrderStatus, LedgerEntryType } from "@prisma/client";
+import { PrismaClient, Role, SiteStatus, ListingType, OrderStatus, LedgerEntryType, PayoutMethodType } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const db = new PrismaClient();
@@ -232,17 +232,27 @@ async function main() {
   }
   console.log(`  ✓ ${count} Sites, Metrics, and Listings seeded successfully`);
 
-  // Seed Reseller Bank Accounts
-  console.log("→ Seeding bank accounts for reseller...");
-  const bankAccount = await db.bankAccount.create({
+  // Seed Reseller Payout Methods
+  console.log("→ Seeding payout methods for reseller...");
+  const paypalAccount = await db.bankAccount.create({
     data: {
       userId: reseller.id,
-      label: "Chase Checking - 4321",
-      accountName: "Publisher Reseller Chase",
-      bankName: "Chase Bank",
-      routingNumber: "123456789",
-      accountNumber: "987654321",
+      label: "PayPal Business",
+      accountName: "Publisher Reseller PayPal",
+      methodType: PayoutMethodType.PAYPAL,
+      paypalEmail: "reseller-paypal@example.com",
       isDefault: true,
+    },
+  });
+
+  const stripeAccount = await db.bankAccount.create({
+    data: {
+      userId: reseller.id,
+      label: "Stripe Connect",
+      accountName: "Publisher Reseller Stripe",
+      methodType: PayoutMethodType.STRIPE,
+      stripeEmail: "reseller-stripe@example.com",
+      isDefault: false,
     },
   });
 
@@ -251,25 +261,35 @@ async function main() {
   await db.payout.create({
     data: {
       resellerId: reseller.id,
-      bankAccountId: bankAccount.id,
+      bankAccountId: paypalAccount.id,
       amountCents: 15000, // $150.00
       status: "REQUESTED",
-      bankSnapshot: { label: bankAccount.label, accountName: bankAccount.accountName },
+      bankSnapshot: {
+        label: paypalAccount.label,
+        accountName: paypalAccount.accountName,
+        methodType: paypalAccount.methodType,
+        paypalEmail: paypalAccount.paypalEmail,
+      },
     },
   });
 
   await db.payout.create({
     data: {
       resellerId: reseller.id,
-      bankAccountId: bankAccount.id,
+      bankAccountId: paypalAccount.id,
       amountCents: 5000, // $50.00
       status: "PAID",
-      bankSnapshot: { label: bankAccount.label, accountName: bankAccount.accountName },
+      bankSnapshot: {
+        label: paypalAccount.label,
+        accountName: paypalAccount.accountName,
+        methodType: paypalAccount.methodType,
+        paypalEmail: paypalAccount.paypalEmail,
+      },
       paidAt: new Date(),
     },
   });
 
-  console.log("  ✓ Bank accounts and payout logs populated.");
+  console.log("  ✓ Payout methods and logs populated.");
 }
 
 main()

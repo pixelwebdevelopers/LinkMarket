@@ -63,15 +63,27 @@ export default function MarketplacePage() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [showFilters, setShowFilters] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const [prevFilters, setPrevFilters] = useState(filters);
   const [prevPage, setPrevPage] = useState(page);
+  const [prevSearch, setPrevSearch] = useState("");
 
-  if (filters !== prevFilters || page !== prevPage) {
+  if (filters !== prevFilters || page !== prevPage || debouncedSearch !== prevSearch) {
     setPrevFilters(filters);
     setPrevPage(page);
+    setPrevSearch(debouncedSearch);
     setLoading(true);
   }
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
     let active = true;
@@ -85,6 +97,7 @@ export default function MarketplacePage() {
       if (filters.minPrice) params.set("minPrice", filters.minPrice);
       if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
       if (filters.minTraffic) params.set("minTraffic", filters.minTraffic);
+      if (debouncedSearch.trim()) params.set("q", debouncedSearch.trim());
       
       const res = await fetch(`/api/marketplace?${params}`);
       const data = await res.json();
@@ -99,14 +112,18 @@ export default function MarketplacePage() {
     return () => {
       active = false;
     };
-  }, [filters, page]);
+  }, [filters, page, debouncedSearch]);
 
   function updateFilter(key: keyof Filters, value: string) {
     setFilters((prev) => ({ ...prev, [key]: value }));
     setPage(1);
   }
-  function resetFilters() { setFilters(defaultFilters); setPage(1); }
-  const hasActiveFilters = Object.entries(filters).some(([k, v]) => v !== "" && k !== "sortBy");
+  function resetFilters() {
+    setFilters(defaultFilters);
+    setSearchQuery("");
+    setPage(1);
+  }
+  const hasActiveFilters = Object.entries(filters).some(([k, v]) => v !== "" && k !== "sortBy") || searchQuery !== "";
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 transition-colors duration-200">
@@ -168,22 +185,36 @@ export default function MarketplacePage() {
       </div>
 
       <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-        {/* Type selector tabs */}
-        <div className="flex gap-1.5 p-1 bg-zinc-200/50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/80 rounded-xl w-fit mb-6">
-          {TYPE_OPTIONS.map((t) => (
-            <button
-              key={t.value}
-              onClick={() => updateFilter("type", t.value)}
-              className={cn(
-                "px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-150",
-                filters.type === t.value
-                  ? "bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-sm border border-zinc-200/40 dark:border-zinc-700/40"
-                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-              )}
-            >
-              {t.label}
-            </button>
-          ))}
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
+          {/* Type selector tabs */}
+          <div className="flex gap-1.5 p-1 bg-zinc-200/50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/80 rounded-xl w-fit">
+            {TYPE_OPTIONS.map((t) => (
+              <button
+                key={t.value}
+                onClick={() => updateFilter("type", t.value)}
+                className={cn(
+                  "px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-150",
+                  filters.type === t.value
+                    ? "bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-sm border border-zinc-200/40 dark:border-zinc-700/40"
+                    : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Search bar next to tabs */}
+          <div className="relative w-full sm:max-w-xs">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+            <input
+              type="text"
+              placeholder="Search website domain..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-2.5 w-full rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm"
+            />
+          </div>
         </div>
 
         {/* Filters drawer panel */}

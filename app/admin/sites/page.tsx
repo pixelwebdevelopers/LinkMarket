@@ -673,6 +673,8 @@ function EditSiteModal({
   onClose: () => void;
   onSubmit: (fields: any) => void;
 }) {
+  const [activeTab, setActiveTab] = useState<"details" | "packages">("details");
+
   const [form, setForm] = useState({
     name: site.name,
     url: site.url,
@@ -727,136 +729,168 @@ function EditSiteModal({
   }
 
   return (
-    <Modal title={`Edit · ${getDomainFromUrl(site.url)}`} onClose={onClose}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Input label="Site name" value={form.name} onChange={(e) => update("name", e.target.value)} />
-        <Input label="Site URL" type="url" value={form.url} onChange={(e) => update("url", e.target.value)} />
-        <Input label="Niche" value={form.niche} onChange={(e) => update("niche", e.target.value)} />
-        <Input label="Language" value={form.language} onChange={(e) => update("language", e.target.value)} />
-        <Input label="Country" value={form.country} onChange={(e) => update("country", e.target.value)} />
-        <Input
-          label="Example link"
-          type="url"
-          value={form.exampleUrl}
-          onChange={(e) => update("exampleUrl", e.target.value)}
-        />
-      </div>
-      <div>
-        <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide block mb-1.5">Description</p>
-        <textarea
-          rows={2}
-          value={form.description}
-          onChange={(e) => update("description", e.target.value)}
-          className="w-full rounded-xl bg-zinc-200/60 dark:bg-zinc-800/60 border border-zinc-300 dark:border-zinc-700 px-3.5 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none"
-        />
+    <Modal title={`Edit Site · ${getDomainFromUrl(site.url)}`} onClose={onClose}>
+      <div className="flex border-b border-zinc-200 dark:border-zinc-800 mb-4">
+        <button
+          type="button"
+          onClick={() => setActiveTab("details")}
+          className={`flex-1 pb-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
+            activeTab === "details"
+              ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+              : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+          }`}
+        >
+          General Details
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("packages")}
+          className={`flex-1 pb-2.5 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
+            activeTab === "packages"
+              ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
+              : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+          }`}
+        >
+          Pricing Packages ({listings.length})
+        </button>
       </div>
 
-      <div className="border-t border-zinc-200 dark:border-zinc-800 pt-4">
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500">Packages / Listings</h3>
-          {listings.length < 2 && (
-            <button
-              type="button"
-              onClick={addListing}
-              className="text-xs font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 flex items-center gap-1"
-            >
-              <PlusCircle className="h-3.5 w-3.5" /> Add Package
-            </button>
-          )}
+      {activeTab === "details" ? (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input label="Site name" value={form.name} onChange={(e) => update("name", e.target.value)} />
+            <Input label="Site URL" type="url" value={form.url} onChange={(e) => update("url", e.target.value)} />
+            <Input label="Niche" value={form.niche} onChange={(e) => update("niche", e.target.value)} />
+            <Input label="Language" value={form.language} onChange={(e) => update("language", e.target.value)} />
+            <Input label="Country" value={form.country} onChange={(e) => update("country", e.target.value)} />
+            <Input
+              label="Example link"
+              type="url"
+              value={form.exampleUrl}
+              onChange={(e) => update("exampleUrl", e.target.value)}
+            />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide block mb-1.5">Description</p>
+            <textarea
+              rows={3}
+              value={form.description}
+              onChange={(e) => update("description", e.target.value)}
+              className="w-full rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3.5 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
         </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center mb-1">
+            <p className="text-xs text-zinc-500">Configure what packages are offered for this site.</p>
+            {listings.length < 2 && (
+              <button
+                type="button"
+                onClick={addListing}
+                className="text-xs font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 flex items-center gap-1 bg-indigo-500/10 px-2.5 py-1.5 rounded-xl border border-indigo-500/20"
+              >
+                <PlusCircle className="h-3.5 w-3.5" /> Add Package
+              </button>
+            )}
+          </div>
 
-        {listings.length === 0 ? (
-          <p className="text-xs text-zinc-500 italic py-2">No listing packages for this site.</p>
-        ) : (
-          <div className="space-y-4">
-            {listings.map((l, index) => (
-              <div key={index} className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 relative">
-                <button
-                  type="button"
-                  onClick={() => removeListing(index)}
-                  className="absolute top-4 right-4 text-zinc-400 hover:text-red-600 transition-colors"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <div>
-                    <label className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block mb-1">
-                      Type
-                    </label>
-                    <select
-                      value={l.type}
-                      onChange={(e) => updateListing(index, "type", e.target.value)}
-                      disabled={!!l.id}
-                      className="w-full rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100"
-                    >
-                      <option value="GUEST_POST">GUEST POST</option>
-                      <option value="NICHE_EDIT">NICHE EDIT</option>
-                    </select>
-                  </div>
-                  <Input
-                    label="Price (USD)"
-                    type="number"
-                    step="0.01"
-                    min="1"
-                    value={l.price}
-                    onChange={(e) => updateListing(index, "price", e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <Input
-                    label="Turnaround (Days)"
-                    type="number"
-                    min="1"
-                    value={l.turnaroundDays}
-                    onChange={(e) => updateListing(index, "turnaroundDays", e.target.value)}
-                    required
-                  />
-                  {l.includesContent && (
+          {listings.length === 0 ? (
+            <div className="text-center py-8 bg-zinc-50 dark:bg-zinc-900/45 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl">
+              <p className="text-xs text-zinc-500 italic mb-2">No listing packages for this site.</p>
+              <Button size="sm" onClick={addListing}>Create Package</Button>
+            </div>
+          ) : (
+            <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-1">
+              {listings.map((l, index) => (
+                <div key={index} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 relative shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => removeListing(index)}
+                    className="absolute top-4 right-4 text-zinc-400 hover:text-red-600 transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block mb-1">
+                        Type
+                      </label>
+                      <select
+                        value={l.type}
+                        onChange={(e) => updateListing(index, "type", e.target.value)}
+                        disabled={!!l.id}
+                        className="w-full rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none"
+                      >
+                        <option value="GUEST_POST">GUEST POST</option>
+                        <option value="NICHE_EDIT">NICHE EDIT</option>
+                      </select>
+                    </div>
                     <Input
-                      label="Word Count"
+                      label="Price (USD)"
                       type="number"
-                      min="100"
-                      value={l.wordCount}
-                      onChange={(e) => updateListing(index, "wordCount", e.target.value)}
+                      step="0.01"
+                      min="1"
+                      value={l.price}
+                      onChange={(e) => updateListing(index, "price", e.target.value)}
                       required
                     />
-                  )}
-                </div>
-                <div className="flex gap-4 mb-2">
-                  <label className="flex items-center gap-1.5 text-xs cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={l.doFollow}
-                      onChange={(e) => updateListing(index, "doFollow", e.target.checked)}
-                      className="h-3.5 w-3.5 rounded border-zinc-300"
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <Input
+                      label="Turnaround (Days)"
+                      type="number"
+                      min="1"
+                      value={l.turnaroundDays}
+                      onChange={(e) => updateListing(index, "turnaroundDays", e.target.value)}
+                      required
                     />
-                    <span>Do-Follow</span>
-                  </label>
-                  <label className="flex items-center gap-1.5 text-xs cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={l.includesContent}
-                      onChange={(e) => updateListing(index, "includesContent", e.target.checked)}
-                      className="h-3.5 w-3.5 rounded border-zinc-300"
-                    />
-                    <span>Includes Content</span>
-                  </label>
+                    {l.includesContent && (
+                      <Input
+                        label="Word Count"
+                        type="number"
+                        min="100"
+                        value={l.wordCount}
+                        onChange={(e) => updateListing(index, "wordCount", e.target.value)}
+                        required
+                      />
+                    )}
+                  </div>
+                  <div className="flex gap-4 mb-2">
+                    <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={l.doFollow}
+                        onChange={(e) => updateListing(index, "doFollow", e.target.checked)}
+                        className="h-3.5 w-3.5 rounded border-zinc-300"
+                      />
+                      <span>Do-Follow</span>
+                    </label>
+                    <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={l.includesContent}
+                        onChange={(e) => updateListing(index, "includesContent", e.target.checked)}
+                        className="h-3.5 w-3.5 rounded border-zinc-300"
+                      />
+                      <span>Includes Content</span>
+                    </label>
+                  </div>
+                  <textarea
+                    placeholder="Extra notes or guidelines..."
+                    value={l.extraNotes}
+                    onChange={(e) => updateListing(index, "extraNotes", e.target.value)}
+                    className="w-full rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3.5 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none"
+                    rows={1}
+                  />
                 </div>
-                <textarea
-                  placeholder="Extra notes or guidelines..."
-                  value={l.extraNotes}
-                  onChange={(e) => updateListing(index, "extraNotes", e.target.value)}
-                  className="w-full rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none"
-                  rows={1}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
-      <div className="flex gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+      <div className="flex gap-2 pt-3 border-t border-zinc-200 dark:border-zinc-800 mt-4">
         <Button onClick={() => onSubmit({ ...form, listings })} loading={busy}>
           Save changes
         </Button>

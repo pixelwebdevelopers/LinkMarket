@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import type { Role } from "@prisma/client";
+import { db } from "@/lib/db";
 
 export class AuthError extends Error {
   status: number;
@@ -13,7 +14,12 @@ export class AuthError extends Error {
 export async function requireUser() {
   const session = await auth();
   if (!session?.user?.id) throw new AuthError("Unauthorized", 401);
-  return session.user;
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, role: true, isDisabled: true }
+  });
+  if (!user || user.isDisabled) throw new AuthError("Unauthorized", 401);
+  return user;
 }
 
 /** Returns the session user only if their role matches; otherwise throws 401/403. */
