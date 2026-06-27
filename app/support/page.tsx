@@ -39,7 +39,7 @@ export default async function SupportPage() {
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       {/* Header */}
       <div className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-12 text-center">
           <div className="h-12 w-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center mx-auto mb-4">
             <LifeBuoy className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
           </div>
@@ -50,7 +50,7 @@ export default async function SupportPage() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid lg:grid-cols-5 gap-10">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-12 grid lg:grid-cols-5 gap-10">
         {/* Left: FAQ + quick contacts */}
         <div className="lg:col-span-3 space-y-8">
           <div>

@@ -3,7 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
-import { Navbar } from "@/components/layout/Navbar";
+import NextTopLoader from "nextjs-toploader";
+import { AppLayout } from "@/components/layout/AppLayout";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -32,8 +33,8 @@ export default function RootLayout({
       <body className={`${inter.className} bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 antialiased transition-colors duration-200`}>
         <ThemeProvider>
           <SessionProvider>
-            <Navbar />
-            <main>{children}</main>
+            <NextTopLoader color="#4f46e5" showSpinner={false} height={3.5} />
+            <AppLayout>{children}</AppLayout>
           </SessionProvider>
         </ThemeProvider>
       </body>

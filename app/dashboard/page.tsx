@@ -58,7 +58,7 @@ export default async function DashboardPage() {
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       {/* Header */}
       <div className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-between flex-wrap gap-3">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
               Welcome back, {user.name?.split(" ")[0] ?? "there"} 👋
@@ -75,7 +75,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Stats */}
         <div className={`grid sm:grid-cols-3 ${isReseller ? "lg:grid-cols-4" : ""} gap-4`}>
           <StatCard

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { ListingCard } from "@/components/marketplace/ListingCard";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -29,8 +29,34 @@ interface Filters {
 }
 const defaultFilters: Filters = { type:"", niche:"", language:"", minDR:"", maxDR:"", minPrice:"", maxPrice:"", minTraffic:"", sortBy:"price_asc" };
 
+interface ListingItem {
+  id: string;
+  type: string;
+  basePriceCents: number;
+  finalPriceCents: number;
+  turnaroundDays: number;
+  doFollow: boolean;
+  includesContent: boolean;
+  wordCount?: number | null;
+  site: {
+    url: string;
+    name: string;
+    niche: string;
+    language: string;
+    country: string;
+    exampleUrl?: string | null;
+    metrics?: {
+      domainRating: number;
+      domainAuthority: number;
+      organicTraffic: number;
+      referringDomains: number;
+      spamScore: number;
+    } | null;
+  };
+}
+
 export default function MarketplacePage() {
-  const [listings, setListings] = useState<any[]>([]);
+  const [listings, setListings] = useState<ListingItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -38,26 +64,42 @@ export default function MarketplacePage() {
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [showFilters, setShowFilters] = useState(false);
 
-  const fetchListings = useCallback(async (f: Filters, p: number) => {
-    setLoading(true);
-    const params = new URLSearchParams({ page: String(p), limit: "20", sortBy: f.sortBy });
-    if (f.type) params.set("type", f.type);
-    if (f.niche && f.niche !== "All Niches") params.set("niche", f.niche);
-    if (f.language && f.language !== "All Languages") params.set("language", f.language);
-    if (f.minDR) params.set("minDR", f.minDR);
-    if (f.maxDR) params.set("maxDR", f.maxDR);
-    if (f.minPrice) params.set("minPrice", f.minPrice);
-    if (f.maxPrice) params.set("maxPrice", f.maxPrice);
-    if (f.minTraffic) params.set("minTraffic", f.minTraffic);
-    const res = await fetch(`/api/marketplace?${params}`);
-    const data = await res.json();
-    setListings(data.listings ?? []);
-    setTotal(data.total ?? 0);
-    setTotalPages(data.totalPages ?? 1);
-    setLoading(false);
-  }, []);
+  const [prevFilters, setPrevFilters] = useState(filters);
+  const [prevPage, setPrevPage] = useState(page);
 
-  useEffect(() => { fetchListings(filters, page); }, [filters, page, fetchListings]);
+  if (filters !== prevFilters || page !== prevPage) {
+    setPrevFilters(filters);
+    setPrevPage(page);
+    setLoading(true);
+  }
+
+  useEffect(() => {
+    let active = true;
+    const loadData = async () => {
+      const params = new URLSearchParams({ page: String(page), limit: "20", sortBy: filters.sortBy });
+      if (filters.type) params.set("type", filters.type);
+      if (filters.niche && filters.niche !== "All Niches") params.set("niche", filters.niche);
+      if (filters.language && filters.language !== "All Languages") params.set("language", filters.language);
+      if (filters.minDR) params.set("minDR", filters.minDR);
+      if (filters.maxDR) params.set("maxDR", filters.maxDR);
+      if (filters.minPrice) params.set("minPrice", filters.minPrice);
+      if (filters.maxPrice) params.set("maxPrice", filters.maxPrice);
+      if (filters.minTraffic) params.set("minTraffic", filters.minTraffic);
+      
+      const res = await fetch(`/api/marketplace?${params}`);
+      const data = await res.json();
+      if (active) {
+        setListings(data.listings ?? []);
+        setTotal(data.total ?? 0);
+        setTotalPages(data.totalPages ?? 1);
+        setLoading(false);
+      }
+    };
+    loadData();
+    return () => {
+      active = false;
+    };
+  }, [filters, page]);
 
   function updateFilter(key: keyof Filters, value: string) {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -67,100 +109,229 @@ export default function MarketplacePage() {
   const hasActiveFilters = Object.entries(filters).some(([k, v]) => v !== "" && k !== "sortBy");
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 transition-colors duration-200">
       {/* Header */}
-      <div className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-3xl font-bold text-zinc-900 dark:text-white mb-1">Link Marketplace</h1>
-          <p className="text-zinc-600 dark:text-zinc-400 text-sm">
-            {total > 0 ? <>{total.toLocaleString()} listings available</> : "Browse curated publisher listings"}
-          </p>
+      <div className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 backdrop-blur-md sticky top-0 z-10 py-5 px-4 sm:px-6 lg:px-8">
+        <div className="w-full flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+              <Globe className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+              Link Marketplace
+            </h1>
+            <p className="text-zinc-500 dark:text-zinc-400 text-xs mt-1">
+              {total > 0 ? (
+                <span className="inline-flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-md font-semibold">
+                  {total.toLocaleString()} listings available
+                </span>
+              ) : (
+                "Browse curated publisher listings"
+              )}
+            </p>
+          </div>
+          
+          {/* Sorting and Filter Toggle */}
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <select
+              value={filters.sortBy}
+              onChange={(e) => updateFilter("sortBy", e.target.value)}
+              className="rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3.5 py-2 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            >
+              {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+
+            <Button
+              variant={showFilters ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+              className="rounded-xl h-9.5 text-xs font-semibold px-4"
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              <span>Filters</span>
+              {hasActiveFilters && (
+                <span className="h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+              )}
+            </Button>
+
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetFilters}
+                className="rounded-xl h-9.5"
+                title="Reset all filters"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Filter bar */}
-        <div className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 mb-6 space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            {/* Type tabs */}
-            <div className="flex gap-2 flex-wrap">
-              {TYPE_OPTIONS.map((t) => (
-                <button key={t.value} onClick={() => updateFilter("type", t.value)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg text-sm font-medium border transition-all duration-150",
-                    filters.type === t.value
-                      ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/20"
-                      : "border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-400 dark:hover:border-zinc-600 hover:text-zinc-900 dark:hover:text-white"
-                  )}>
-                  {t.label}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-2 ml-auto">
-              <select value={filters.sortBy} onChange={(e) => updateFilter("sortBy", e.target.value)}
-                className="rounded-xl bg-zinc-200 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
-                {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-              <Button variant={showFilters ? "secondary" : "outline"} size="sm" onClick={() => setShowFilters(!showFilters)}>
-                <SlidersHorizontal className="h-4 w-4" />
-                Filters
-                {hasActiveFilters && <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />}
-              </Button>
-              {hasActiveFilters && <Button variant="ghost" size="sm" onClick={resetFilters}><X className="h-4 w-4" /></Button>}
-            </div>
-          </div>
-
-          {showFilters && (
-            <div className="border-t border-zinc-200 dark:border-zinc-800 pt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
-              <Select label="Niche" options={NICHES.map((n) => ({ value: n, label: n }))}
-                value={filters.niche || "All Niches"} onChange={(e) => updateFilter("niche", e.target.value)} />
-              <Select label="Language" options={LANGUAGES.map((l) => ({ value: l, label: l }))}
-                value={filters.language || "All Languages"} onChange={(e) => updateFilter("language", e.target.value)} />
-              <Input label="Min DR" type="number" placeholder="0" value={filters.minDR} onChange={(e) => updateFilter("minDR", e.target.value)} />
-              <Input label="Max DR" type="number" placeholder="100" value={filters.maxDR} onChange={(e) => updateFilter("maxDR", e.target.value)} />
-              <Input label="Min Price" type="number" placeholder="$0" value={filters.minPrice} onChange={(e) => updateFilter("minPrice", e.target.value)} />
-              <Input label="Max Price" type="number" placeholder="Any" value={filters.maxPrice} onChange={(e) => updateFilter("maxPrice", e.target.value)} />
-              <Input label="Min Traffic" type="number" placeholder="0" value={filters.minTraffic} onChange={(e) => updateFilter("minTraffic", e.target.value)} />
-            </div>
-          )}
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+        {/* Type selector tabs */}
+        <div className="flex gap-1.5 p-1 bg-zinc-200/50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/80 rounded-xl w-fit mb-6">
+          {TYPE_OPTIONS.map((t) => (
+            <button
+              key={t.value}
+              onClick={() => updateFilter("type", t.value)}
+              className={cn(
+                "px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-150",
+                filters.type === t.value
+                  ? "bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-sm border border-zinc-200/40 dark:border-zinc-700/40"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
-        {/* List */}
+        {/* Filters drawer panel */}
+        {showFilters && (
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 mb-6 shadow-xl shadow-zinc-900/5 dark:shadow-black/20 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4 animate-scale-in">
+            <Select
+              label="Niche"
+              options={NICHES.map((n) => ({ value: n, label: n }))}
+              value={filters.niche || "All Niches"}
+              onChange={(e) => updateFilter("niche", e.target.value)}
+            />
+            <Select
+              label="Language"
+              options={LANGUAGES.map((l) => ({ value: l, label: l }))}
+              value={filters.language || "All Languages"}
+              onChange={(e) => updateFilter("language", e.target.value)}
+            />
+            <Input
+              label="Min DR"
+              type="number"
+              placeholder="0"
+              value={filters.minDR}
+              onChange={(e) => updateFilter("minDR", e.target.value)}
+            />
+            <Input
+              label="Max DR"
+              type="number"
+              placeholder="100"
+              value={filters.maxDR}
+              onChange={(e) => updateFilter("maxDR", e.target.value)}
+            />
+            <Input
+              label="Min Price"
+              type="number"
+              placeholder="$0"
+              value={filters.minPrice}
+              onChange={(e) => updateFilter("minPrice", e.target.value)}
+            />
+            <Input
+              label="Max Price"
+              type="number"
+              placeholder="Any"
+              value={filters.maxPrice}
+              onChange={(e) => updateFilter("maxPrice", e.target.value)}
+            />
+            <Input
+              label="Min Traffic"
+              type="number"
+              placeholder="0"
+              value={filters.minTraffic}
+              onChange={(e) => updateFilter("minTraffic", e.target.value)}
+            />
+          </div>
+        )}
+
+        {/* Tabular List View */}
         {loading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl h-24 animate-pulse" />
-            ))}
+          <div className="overflow-x-auto scrollbar-none rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl shadow-zinc-900/5">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-zinc-50 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-800 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                  <th className="px-4 py-3">Portal</th>
+                  <th className="px-4 py-3">Country</th>
+                  <th className="px-4 py-3">Language</th>
+                  <th className="px-4 py-3">Category</th>
+                  <th className="px-4 py-3">Also Accepting</th>
+                  <th className="px-4 py-3 text-center">DR</th>
+                  <th className="px-4 py-3 text-center">Traffic</th>
+                  <th className="px-4 py-3 text-center">RD</th>
+                  <th className="px-4 py-3 text-center">DA</th>
+                  <th className="px-4 py-3 text-center">SS</th>
+                  <th className="px-4 py-3 text-right">Price</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <tr key={i} className="border-b border-zinc-200/60 dark:border-zinc-800/60">
+                    {Array.from({ length: 12 }).map((_, j) => (
+                      <td key={j} className="px-4 py-4.5">
+                        <div className="h-4 bg-zinc-100 dark:bg-zinc-800/80 rounded animate-pulse w-full max-w-[80px]" />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : listings.length === 0 ? (
-          <div className="text-center py-24">
-            <div className="h-16 w-16 rounded-2xl bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+          <div className="text-center py-24 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-zinc-900/5">
+            <div className="h-16 w-16 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-4">
               <Search className="h-8 w-8 text-zinc-400 dark:text-zinc-600" />
             </div>
-            <p className="text-zinc-900 dark:text-white font-semibold text-lg mb-2">No listings found</p>
+            <p className="text-zinc-950 dark:text-white font-semibold text-lg mb-2">No listings found</p>
             <p className="text-zinc-500 text-sm mb-6">Try adjusting your filters or browse all listings</p>
-            <Button variant="outline" onClick={resetFilters}>Reset Filters</Button>
+            <Button variant="outline" onClick={resetFilters} className="rounded-xl">Reset Filters</Button>
           </div>
         ) : (
           <>
-            {/* Column header (md+) */}
-            <div className="hidden md:grid md:grid-cols-[minmax(0,1fr)_repeat(4,64px)_110px_100px] md:gap-5 md:items-center px-5 mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-              <span>Site</span>
-              <span className="text-center">DR</span>
-              <span className="text-center">DA</span>
-              <span className="text-center">Traffic</span>
-              <span className="text-center">Refs</span>
-              <span className="text-right">Price</span>
-              <span />
+            <div className="overflow-x-auto scrollbar-none rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl shadow-zinc-900/5 dark:shadow-black/20">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-zinc-50 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-800 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                    <th className="px-4 py-3">Portal</th>
+                    <th className="px-4 py-3">Country</th>
+                    <th className="px-4 py-3">Language</th>
+                    <th className="px-4 py-3">Category</th>
+                    <th className="px-4 py-3">Also Accepting</th>
+                    <th className="px-4 py-3 text-center">DR</th>
+                    <th className="px-4 py-3 text-center">Traffic</th>
+                    <th className="px-4 py-3 text-center">RD</th>
+                    <th className="px-4 py-3 text-center">DA</th>
+                    <th className="px-4 py-3 text-center">SS</th>
+                    <th className="px-4 py-3 text-right">Price</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {listings.map((listing) => (
+                    <ListingCard key={listing.id} listing={listing} />
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <div className="space-y-2.5">
-              {listings.map((listing) => <ListingCard key={listing.id} listing={listing} />)}
-            </div>
+
             {totalPages > 1 && (
               <div className="flex items-center justify-center gap-3 mt-10">
-                <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>← Previous</Button>
-                <span className="text-sm text-zinc-600 dark:text-zinc-400">Page {page} of {totalPages}</span>
-                <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage((p) => p + 1)}>Next →</Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 1}
+                  onClick={() => setPage((p) => p - 1)}
+                  className="rounded-xl"
+                >
+                  ← Previous
+                </Button>
+                <span className="text-xs font-semibold text-zinc-500">
+                  Page {page} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="rounded-xl"
+                >
+                  Next →
+                </Button>
               </div>
             )}
           </>

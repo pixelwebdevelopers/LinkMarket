@@ -18,6 +18,8 @@ import {
 export function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
+  const isAuthPage = pathname === "/login" || pathname === "/register" || pathname === "/forgot-password" || pathname === "/reset-password";
+  const hasActiveSession = session && !isAuthPage;
   // When the user is inside a panel area (admin / reseller), the panel's own
   // sidebar handles navigation, so we hide the navbar's nav links + mobile menu
   // to avoid duplication. Keep theme toggle, notifications, and user menu.
@@ -25,7 +27,7 @@ export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const role = session?.user?.role;
+  const role = hasActiveSession ? (session.user as { role?: string }).role : undefined;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -42,7 +44,7 @@ export function Navbar() {
 
   const navLinks = [
     { href: "/marketplace", label: "Marketplace" },
-    ...(session ? [
+    ...(hasActiveSession ? [
       { href: "/dashboard", label: "Dashboard" },
       { href: "/orders", label: "Orders" },
     ] : []),
@@ -108,8 +110,8 @@ export function Navbar() {
           {/* Right */}
           <div className="hidden md:flex items-center gap-3 shrink-0">
             <ThemeToggle />
-            {session && <NotificationBell />}
-            {session ? (
+             {hasActiveSession && <NotificationBell />}
+            {hasActiveSession ? (
               <div className="relative">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
@@ -200,7 +202,7 @@ export function Navbar() {
 
           {/* Mobile toggle area — hamburger hidden inside panel areas */}
           <div className="md:hidden flex items-center gap-2">
-            {session && <NotificationBell />}
+            {hasActiveSession && <NotificationBell />}
             <ThemeToggle />
             {!inPanel && (
               <button
@@ -245,7 +247,7 @@ export function Navbar() {
           ))}
 
           <div className="pt-3 mt-2 border-t border-zinc-200 dark:border-zinc-800">
-            {session ? (
+            {hasActiveSession ? (
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}
                 className="flex items-center gap-2 w-full py-3 px-3 text-sm font-medium text-red-700 dark:text-red-400 rounded-xl hover:bg-red-500/10 transition-colors"

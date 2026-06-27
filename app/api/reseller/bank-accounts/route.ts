@@ -21,13 +21,38 @@ export async function POST(req: NextRequest) {
   try {
     const user = await requireRole("RESELLER", "ADMIN");
     const body = await req.json();
-    const { label, accountName, accountNumber, routingNumber, iban, swift, bankName, country, isDefault } = body;
+    const {
+      label,
+      accountName,
+      methodType = "BANK_WIRE",
+      paypalEmail,
+      stripeEmail,
+      accountNumber,
+      routingNumber,
+      iban,
+      swift,
+      bankName,
+      country,
+      isDefault
+    } = body;
 
     if (!label || !accountName) {
       return NextResponse.json({ error: "label and accountName are required" }, { status: 400 });
     }
-    if (!accountNumber && !iban) {
-      return NextResponse.json({ error: "Provide an account number or IBAN" }, { status: 400 });
+
+    if (methodType === "PAYPAL") {
+      if (!paypalEmail) {
+        return NextResponse.json({ error: "PayPal email is required" }, { status: 400 });
+      }
+    } else if (methodType === "STRIPE") {
+      if (!stripeEmail) {
+        return NextResponse.json({ error: "Stripe email/account is required" }, { status: 400 });
+      }
+    } else {
+      // BANK_WIRE
+      if (!accountNumber && !iban) {
+        return NextResponse.json({ error: "Provide an account number or IBAN" }, { status: 400 });
+      }
     }
 
     const existingCount = await db.bankAccount.count({ where: { userId: user.id } });
@@ -45,12 +70,15 @@ export async function POST(req: NextRequest) {
           userId: user.id,
           label,
           accountName,
-          accountNumber: accountNumber ?? null,
-          routingNumber: routingNumber ?? null,
-          iban: iban ?? null,
-          swift: swift ?? null,
-          bankName: bankName ?? null,
-          country: country ?? null,
+          methodType: methodType as any,
+          paypalEmail: methodType === "PAYPAL" ? paypalEmail : null,
+          stripeEmail: methodType === "STRIPE" ? stripeEmail : null,
+          accountNumber: methodType === "BANK_WIRE" ? (accountNumber ?? null) : null,
+          routingNumber: methodType === "BANK_WIRE" ? (routingNumber ?? null) : null,
+          iban: methodType === "BANK_WIRE" ? (iban ?? null) : null,
+          swift: methodType === "BANK_WIRE" ? (swift ?? null) : null,
+          bankName: methodType === "BANK_WIRE" ? (bankName ?? null) : null,
+          country: methodType === "BANK_WIRE" ? (country ?? null) : null,
           isDefault: makeDefault,
         },
       });

@@ -5,7 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDate, getDomainFromUrl } from "@/lib/utils";
-import { CheckCircle, ExternalLink, Shield, Loader2, AlertTriangle } from "lucide-react";
+import { CheckCircle, ExternalLink, Shield, Loader2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { MessageThread } from "@/components/orders/MessageThread";
 import { DisputePanel } from "@/components/orders/DisputePanel";
@@ -48,7 +48,37 @@ export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: session } = useSession();
 
-  const [order, setOrder] = useState<any>(null);
+  interface OrderDetails {
+    id: string;
+    status: string;
+    createdAt: string;
+    pricePaidCents: number;
+    adminCommissionCents: number;
+    resellerEarningCents: number;
+    targetUrl?: string | null;
+    anchorText?: string | null;
+    articleUrl?: string | null;
+    notes?: string | null;
+    contentBody?: string | null;
+    stripePaymentIntentId?: string | null;
+    listing?: {
+      id: string;
+      type: string;
+      basePriceCents: number;
+      finalPriceCents: number;
+      turnaroundDays: number;
+      site?: {
+        url: string;
+        name: string;
+        niche: string;
+        language: string;
+        country: string;
+      } | null;
+    } | null;
+    [key: string]: unknown;
+  }
+
+  const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [articleUrl, setArticleUrl] = useState("");
   const [updating, setUpdating] = useState(false);
@@ -95,8 +125,8 @@ export default function OrderDetailPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to start checkout");
       window.location.href = data.url;
-    } catch (err: any) {
-      setError(err.message ?? String(err));
+    } catch (err: unknown) {
+      setError((err as Error).message ?? String(err));
       setPaying(false);
     }
   }
@@ -104,7 +134,7 @@ export default function OrderDetailPage() {
   if (loading)
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-        <div className="max-w-3xl mx-auto px-4 py-10 animate-pulse h-96 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl" />
+        <div className="w-full px-4 py-10 animate-pulse h-96 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl" />
       </div>
     );
   if (!order || order.error)
@@ -122,7 +152,7 @@ export default function OrderDetailPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-fade-in">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-fade-in">
         <Suspense>
           <PaidBanner />
         </Suspense>
@@ -217,7 +247,7 @@ export default function OrderDetailPage() {
             <div className="min-w-0">
               <p className="text-zinc-500 text-xs mb-0.5">Target URL</p>
               <a
-                href={order.targetUrl}
+                href={order.targetUrl ?? undefined}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-indigo-700 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 transition-colors flex items-center gap-1 truncate"

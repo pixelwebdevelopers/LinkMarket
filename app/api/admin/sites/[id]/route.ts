@@ -43,10 +43,58 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const admin = await requireAdmin();
     const { id } = await params;
     const body = await req.json();
-    const { status, rejectionReason, commissionCentsOverride, ...rest } = body;
+    const { status, rejectionReason, commissionCentsOverride, listings, ...rest } = body;
 
     const site = await db.site.findUnique({ where: { id }, select: { ownerId: true, name: true } });
     if (!site) return NextResponse.json({ error: "Site not found" }, { status: 404 });
+
+    // Handle listings update first
+    let updatedListings = false;
+    if (listings && Array.isArray(listings)) {
+      const keepIds = listings.filter((l: any) => l.id).map((l: any) => l.id);
+      await db.listing.deleteMany({
+        where: {
+          siteId: id,
+          id: { notIn: keepIds }
+        }
+      });
+
+      for (const l of listings) {
+        const priceCents = Math.round(parseFloat(l.price) * 100);
+        if (isNaN(priceCents) || priceCents <= 0) {
+          return NextResponse.json({ error: "Price must be a positive number" }, { status: 400 });
+        }
+        if (l.id) {
+          await db.listing.update({
+            where: { id: l.id },
+            data: {
+              basePriceCents: priceCents,
+              turnaroundDays: parseInt(l.turnaroundDays ?? 3),
+              doFollow: l.doFollow ?? true,
+              includesContent: l.includesContent ?? false,
+              wordCount: l.wordCount ? parseInt(l.wordCount) : null,
+              extraNotes: l.extraNotes ?? null,
+              isActive: l.isActive ?? true,
+            }
+          });
+        } else {
+          await db.listing.create({
+            data: {
+              siteId: id,
+              type: l.type,
+              basePriceCents: priceCents,
+              turnaroundDays: parseInt(l.turnaroundDays ?? 3),
+              doFollow: l.doFollow ?? true,
+              includesContent: l.includesContent ?? false,
+              wordCount: l.wordCount ? parseInt(l.wordCount) : null,
+              extraNotes: l.extraNotes ?? null,
+              isActive: l.isActive ?? true,
+            }
+          });
+        }
+      }
+      updatedListings = true;
+    }
 
     const dataToUpdate: Record<string, unknown> = {};
 
@@ -99,23 +147,31 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (dataToUpdate.name === null) return NextResponse.json({ error: "Name is required" }, { status: 400 });
     if (dataToUpdate.niche === null) return NextResponse.json({ error: "Niche is required" }, { status: 400 });
 
-    if (Object.keys(dataToUpdate).length === 0) {
+    if (Object.keys(dataToUpdate).length === 0 && !updatedListings) {
       return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
     }
 
-    const updated = await db.site.update({
-      where: { id },
-      data: {
-        ...dataToUpdate,
-        ...(status === "APPROVED" && {
-          listings: { updateMany: { where: {}, data: { isActive: true } } },
-        }),
-        ...(status && ["REJECTED", "SUSPENDED"].includes(status) && {
-          listings: { updateMany: { where: {}, data: { isActive: false } } },
-        }),
-      },
-      include: { listings: true, metrics: true, owner: { select: { id: true, name: true, email: true, role: true } } },
-    });
+    let updated;
+    if (Object.keys(dataToUpdate).length > 0) {
+      updated = await db.site.update({
+        where: { id },
+        data: {
+          ...dataToUpdate,
+          ...(status === "APPROVED" && {
+            listings: { updateMany: { where: {}, data: { isActive: true } } },
+          }),
+          ...(status && ["REJECTED", "SUSPENDED"].includes(status) && {
+            listings: { updateMany: { where: {}, data: { isActive: false } } },
+          }),
+        },
+        include: { listings: true, metrics: true, owner: { select: { id: true, name: true, email: true, role: true } } },
+      });
+    } else {
+      updated = await db.site.findUnique({
+        where: { id },
+        include: { listings: true, metrics: true, owner: { select: { id: true, name: true, email: true, role: true } } },
+      });
+    }
 
     await logAudit({
       actorId: admin.id,

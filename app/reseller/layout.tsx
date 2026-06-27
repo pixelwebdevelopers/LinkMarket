@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import ResellerPanelShell from "./_panel-shell";
 
 export default async function ResellerLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -9,5 +8,5 @@ export default async function ResellerLayout({ children }: { children: React.Rea
     redirect("/dashboard");
   }
 
-  return <ResellerPanelShell brandSubtitle={session.user.email ?? undefined}>{children}</ResellerPanelShell>;
+  return <>{children}</>;
 }

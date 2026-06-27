@@ -17,8 +17,8 @@ export async function GET(req: NextRequest) {
         role: "RESELLER",
         ...(q && {
           OR: [
-            { email: { contains: q, mode: "insensitive" } },
-            { name: { contains: q, mode: "insensitive" } },
+            { email: { contains: q } },
+            { name: { contains: q } },
           ],
         }),
       },

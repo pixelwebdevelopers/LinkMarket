@@ -34,7 +34,7 @@ export default async function ListingPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-fade-in">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-10 animate-fade-in">
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Left: Site details */}
         <div className="lg:col-span-2 space-y-6">

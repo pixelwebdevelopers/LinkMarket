@@ -5,13 +5,13 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, MailCheck } from "lucide-react";
+import { ArrowRight, MailCheck, User, Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 function RegisterForm() {
   const router = useRouter();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [needsVerify, setNeedsVerify] = useState(false);
@@ -24,13 +24,18 @@ function RegisterForm() {
     e.preventDefault();
     setError("");
     setLoading(true);
+
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
     const data = await res.json();
-    if (!res.ok) { setError(data.error ?? "Registration failed."); setLoading(false); return; }
+    if (!res.ok) {
+      setError(data.error ?? "Registration failed.");
+      setLoading(false);
+      return;
+    }
 
     // When email verification is required, don't sign in — ask them to confirm
     // their email first. Otherwise (email disabled) sign in immediately.
@@ -39,23 +44,26 @@ function RegisterForm() {
       setLoading(false);
       return;
     }
+
     await signIn("credentials", { email: form.email, password: form.password, redirect: false });
-    router.push("/dashboard");
+    router.push("/marketplace");
     router.refresh();
   }
 
   if (needsVerify) {
     return (
-      <div className="text-center py-2">
-        <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
-          <MailCheck className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+      <div className="text-center py-4">
+        <div className="h-14 w-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-4 animate-scale-in">
+          <MailCheck className="h-7 w-7 text-emerald-400" />
         </div>
-        <p className="text-zinc-900 dark:text-white font-semibold mb-1">Confirm your email</p>
-        <p className="text-sm text-zinc-500 mb-5">
-          We sent a verification link to <span className="font-medium text-zinc-700 dark:text-zinc-300">{form.email}</span>. Click it to activate your account, then sign in.
+        <p className="text-white font-bold text-lg mb-2">Confirm your email</p>
+        <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+          We sent a verification link to <span className="font-semibold text-white">{form.email}</span>. Click it to activate your account, then sign in.
         </p>
         <Link href="/login">
-          <Button variant="outline" className="w-full">Go to sign in</Button>
+          <Button variant="outline" className="w-full text-white border-white/20 hover:bg-white/5 h-11 rounded-xl">
+            Go to sign in
+          </Button>
         </Link>
       </div>
     );
@@ -64,30 +72,107 @@ function RegisterForm() {
   return (
     <>
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-400 text-sm rounded-xl px-4 py-3 mb-5">
+        <div className="bg-red-500/10 border border-red-500/20 text-red-300 text-sm rounded-2xl px-4 py-3 mb-5 animate-scale-in">
           {error}
         </div>
       )}
-      <p className="text-xs text-zinc-500 mb-5">
-        Registering creates a customer account. Reseller accounts are created by our team — contact us at{" "}
-        <a href="mailto:support@rankistic.com" className="text-indigo-700 dark:text-indigo-400">support@rankistic.com</a>{" "}
+      <p className="text-[11px] text-slate-400 mb-5 leading-normal bg-indigo-950/40 p-3.5 rounded-xl border border-indigo-500/10">
+        Registering creates a <span className="text-white font-semibold">Customer account</span>. Reseller accounts are created by our team — contact us at{" "}
+        <a href="mailto:support@rankistic.com" className="text-indigo-300 font-semibold hover:text-white transition-colors underline">
+          support@rankistic.com
+        </a>{" "}
         to apply.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Input id="name" label="Full name" placeholder="John Smith"
-          value={form.name} onChange={(e) => update("name", e.target.value)} required />
-        <Input id="email" label="Email address" type="email" placeholder="you@example.com"
-          value={form.email} onChange={(e) => update("email", e.target.value)} required />
-        <Input id="password" label="Password" type="password" placeholder="Min. 8 characters"
-          value={form.password} onChange={(e) => update("password", e.target.value)} required hint="At least 8 characters" />
-        <Button type="submit" className="w-full h-11 text-sm" loading={loading}>
-          Create Account <ArrowRight className="h-4 w-4" />
+        {/* Full Name */}
+        <div>
+          <label htmlFor="name" className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
+            Full name
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <User className="h-4.5 w-4.5" />
+            </div>
+            <input
+              id="name"
+              type="text"
+              placeholder="John Smith"
+              value={form.name}
+              onChange={(e) => update("name", e.target.value)}
+              required
+              className="w-full rounded-2xl bg-white/5 border border-white/10 hover:border-white/20 focus:border-indigo-400 focus:bg-white/10 focus:ring-4 focus:ring-indigo-500/10 px-10 py-3 text-sm text-white placeholder-slate-500 focus:outline-none transition-all duration-200"
+            />
+          </div>
+        </div>
+
+        {/* Email Address */}
+        <div>
+          <label htmlFor="email" className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
+            Email address
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <Mail className="h-4.5 w-4.5" />
+            </div>
+            <input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              value={form.email}
+              onChange={(e) => update("email", e.target.value)}
+              required
+              className="w-full rounded-2xl bg-white/5 border border-white/10 hover:border-white/20 focus:border-indigo-400 focus:bg-white/10 focus:ring-4 focus:ring-indigo-500/10 px-10 py-3 text-sm text-white placeholder-slate-500 focus:outline-none transition-all duration-200"
+            />
+          </div>
+        </div>
+
+        {/* Password */}
+        <div>
+          <label htmlFor="password" className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
+            Password
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <Lock className="h-4.5 w-4.5" />
+            </div>
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Min. 8 characters"
+              value={form.password}
+              onChange={(e) => update("password", e.target.value)}
+              required
+              className="w-full rounded-2xl bg-white/5 border border-white/10 hover:border-white/20 focus:border-indigo-400 focus:bg-white/10 focus:ring-4 focus:ring-indigo-500/10 px-10 py-3 text-sm text-white placeholder-slate-500 focus:outline-none transition-all duration-200"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-white transition-colors"
+            >
+              {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Submit */}
+        <Button
+          type="submit"
+          loading={loading}
+          className="w-full h-12 bg-white text-indigo-950 hover:bg-zinc-100 font-bold text-sm rounded-2xl transition-all duration-200 active:scale-[0.98] shadow-xl shadow-indigo-950/20 mt-4"
+        >
+          Create Account <ArrowRight className="h-4 w-4 ml-1" />
         </Button>
       </form>
-      <p className="text-center text-sm text-zinc-500 mt-6">
+
+      <p className="text-center text-sm text-slate-400 mt-8">
         Already have an account?{" "}
-        <Link href="/login" className="text-indigo-700 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">Sign in</Link>
+        <Link
+          href="/login"
+          className="text-white font-bold hover:text-indigo-300 transition-colors"
+        >
+          Sign in
+        </Link>
       </p>
     </>
   );
@@ -95,23 +180,64 @@ function RegisterForm() {
 
 export default function RegisterPage() {
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-4 py-12 bg-zinc-50 dark:bg-zinc-950 overflow-hidden">
-      <div className="absolute inset-0 hero-mesh pointer-events-none" />
-      <div className="absolute inset-0 bg-grid pointer-events-none" />
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-indigo-600/15 rounded-full blur-3xl animate-pulse-glow" />
+    <div className="relative min-h-screen w-full flex items-center justify-center px-4 py-12 bg-gradient-to-tr from-[#020617] via-[#0f172a] to-[#1e1b4b] overflow-hidden select-none">
+      {/* Decorative Wave Overlays */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-20 dark:opacity-30">
+        <svg className="absolute -bottom-10 -left-10 w-[600px] h-[600px] text-indigo-500/20 animate-float" fill="currentColor" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="40" />
+        </svg>
+        <svg className="absolute -top-20 -right-20 w-[700px] h-[700px] text-purple-500/20 animate-float-slow" fill="currentColor" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" />
+        </svg>
       </div>
-      <div className="relative w-full max-w-md animate-fade-in-up">
+
+      {/* Floating Interactive Glowing Spheres */}
+      <div className="absolute top-1/4 left-1/10 w-96 h-96 bg-indigo-600/10 rounded-full blur-[100px] animate-pulse-glow" />
+      <div className="absolute bottom-1/4 right-1/10 w-[450px] h-[450px] bg-purple-600/10 rounded-full blur-[120px] animate-pulse-glow" />
+
+      {/* Giant Floating Geometric Vector Logos */}
+      <div className="absolute left-[-100px] top-1/3 w-[350px] h-[350px] opacity-10 hidden xl:block animate-float">
+        <svg className="w-full h-full text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+        </svg>
+      </div>
+      <div className="absolute right-[-100px] bottom-1/3 w-[350px] h-[350px] opacity-10 hidden xl:block animate-float-slow">
+        <svg className="w-full h-full text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+      </div>
+
+      {/* Central Register Container */}
+      <div className="relative w-full max-w-[440px] z-10 animate-fade-in-up">
+        {/* Brand Header */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <Image src="/logo.png" alt="Rankistic" width={36} height={36} className="h-9 w-9 rounded-xl bg-white object-contain p-1 shadow-lg shadow-indigo-500/30" />
-            <span className="font-bold text-xl text-zinc-900 dark:text-white">Rankistic</span>
+          <Link href="/" className="inline-flex items-center gap-3 mb-4 group">
+            <div className="relative shrink-0">
+              <div className="absolute inset-0 rounded-2xl bg-indigo-500 blur-md opacity-40 group-hover:opacity-70 transition-opacity" />
+              <Image
+                src="/logo.png"
+                alt="Rankistic"
+                width={42}
+                height={42}
+                priority
+                className="relative h-11 w-11 rounded-2xl bg-white object-contain p-1.5 shadow-2xl transition-transform duration-300 group-hover:scale-105"
+              />
+            </div>
+            <span className="font-bold text-2xl text-white tracking-tight">Rankistic</span>
           </Link>
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Create your account</h1>
-          <p className="text-zinc-600 dark:text-zinc-400 text-sm mt-2">Free to join. No subscription required.</p>
+          <h1 className="text-xl font-medium text-slate-300">Create your account</h1>
         </div>
-        <div className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 shadow-2xl shadow-zinc-900/12 dark:shadow-black/50">
-          <Suspense fallback={<div className="h-72 animate-pulse bg-zinc-200 dark:bg-zinc-800 rounded-xl" />}>
+
+        {/* Card Body */}
+        <div className="bg-slate-900/40 border border-white/10 backdrop-blur-2xl rounded-3xl p-8 shadow-2xl shadow-black/40">
+          <Suspense fallback={
+            <div className="h-80 flex items-center justify-center">
+              <svg className="animate-spin h-7 w-7 text-indigo-400" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            </div>
+          }>
             <RegisterForm />
           </Suspense>
         </div>

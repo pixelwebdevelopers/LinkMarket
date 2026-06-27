@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -83,6 +83,12 @@ enum NotificationType {
   GENERIC
 }
 
+enum PayoutMethodType {
+  PAYPAL
+  STRIPE
+  BANK_WIRE
+}
+
 // ─── User ─────────────────────────────────────────────────────────────────────
 
 model User {
@@ -129,12 +135,12 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String?
-  access_token      String?
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String?
+  id_token          String? @db.Text
   session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -198,7 +204,7 @@ model Site {
   ownerId         String
   url             String     @unique
   name            String
-  description     String?
+  description     String? @db.Text
   language        String     @default("English")
   country         String     @default("US")
   niche           String
@@ -207,7 +213,7 @@ model Site {
   // optional per-site commission override in cents (null = use reseller default or global)
   commissionCentsOverride Int?
 
-  rejectionReason String?
+  rejectionReason String? @db.Text
   approvedAt      DateTime?
   approvedById    String?
 
@@ -252,7 +258,7 @@ model Listing {
   wordCount       Int?
   doFollow        Boolean     @default(true)
   includesContent Boolean     @default(false)
-  extraNotes      String?
+  extraNotes      String? @db.Text
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -279,8 +285,8 @@ model Order {
   anchorText  String?
   targetUrl   String?
   articleUrl  String?
-  notes       String?
-  contentBody String?
+  notes       String? @db.Text
+  contentBody String? @db.Text
 
   // stripe
   stripePaymentIntentId String?    @unique
@@ -288,7 +294,7 @@ model Order {
   stripeCheckoutSessionId String?  @unique
   paidAt                DateTime?
   refundedAt            DateTime?
-  refundReason          String?
+  refundReason          String? @db.Text
 
   // lifecycle timestamps
   acceptedAt   DateTime?
@@ -313,7 +319,7 @@ model OrderMessage {
   id        String   @id @default(cuid())
   orderId   String
   senderId  String
-  body      String
+  body      String @db.Text
   createdAt DateTime @default(now())
 
   order  Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -326,9 +332,9 @@ model Dispute {
   id           String        @id @default(cuid())
   orderId      String        @unique
   openedById   String
-  reason       String
+  reason       String @db.Text
   status       DisputeStatus @default(OPEN)
-  resolution   String?
+  resolution   String? @db.Text
   resolvedById String?
   resolvedAt   DateTime?
   createdAt    DateTime      @default(now())
@@ -342,19 +348,22 @@ model Dispute {
 // ─── BankAccount ──────────────────────────────────────────────────────────────
 
 model BankAccount {
-  id            String   @id @default(cuid())
+  id            String           @id @default(cuid())
   userId        String
   label         String
   accountName   String
+  methodType    PayoutMethodType @default(BANK_WIRE)
+  paypalEmail   String?
+  stripeEmail   String?
   accountNumber String?
   routingNumber String?
   iban          String?
   swift         String?
   bankName      String?
   country       String?
-  isDefault     Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  isDefault     Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   payouts Payout[]
@@ -375,8 +384,8 @@ model Payout {
   paidAt          DateTime?
   paidById        String?
   reference       String?
-  notes           String?
-  rejectionReason String?
+  notes           String? @db.Text
+  rejectionReason String? @db.Text
 
   reseller    User          @relation(fields: [resellerId], references: [id])
   bankAccount BankAccount?  @relation(fields: [bankAccountId], references: [id])
@@ -412,7 +421,7 @@ model Notification {
   userId    String
   type      NotificationType
   title     String
-  body      String
+  body      String @db.Text
   link      String?
   readAt    DateTime?
   createdAt DateTime         @default(now())

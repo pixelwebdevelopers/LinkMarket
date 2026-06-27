@@ -148,7 +148,7 @@ export default function AdminPayoutsPage() {
                       {p.paidAt && ` · Paid ${formatDate(p.paidAt)}`}
                       {p.reference && ` · Ref: ${p.reference}`}
                     </p>
-                    {p.notes && <p className="text-xs text-zinc-500 mt-1 italic">"{p.notes}"</p>}
+                    {p.notes && <p className="text-xs text-zinc-500 mt-1 italic">&ldquo;{p.notes}&rdquo;</p>}
                     {p.rejectionReason && (
                       <p className="text-xs text-red-700 dark:text-red-400 mt-1">Reason: {p.rejectionReason}</p>
                     )}
@@ -177,14 +177,31 @@ export default function AdminPayoutsPage() {
                 </div>
 
                 {p.bankSnapshot && (
-                  <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800 grid sm:grid-cols-3 gap-3 text-xs">
-                    <Field label="Account holder" value={p.bankSnapshot.accountName} />
-                    <Field label="Bank" value={p.bankSnapshot.bankName} />
-                    <Field label="Country" value={p.bankSnapshot.country} />
-                    <Field label="Account #" value={p.bankSnapshot.accountNumber} />
-                    <Field label="Routing" value={p.bankSnapshot.routingNumber} />
-                    <Field label="IBAN" value={p.bankSnapshot.iban} />
-                    <Field label="SWIFT" value={p.bankSnapshot.swift} />
+                  <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800 text-xs">
+                    {p.bankSnapshot.methodType === "PAYPAL" ? (
+                      <div className="grid sm:grid-cols-3 gap-3">
+                        <Field label="Method" value="PayPal" />
+                        <Field label="Account holder" value={p.bankSnapshot.accountName} />
+                        <Field label="PayPal Email" value={p.bankSnapshot.paypalEmail} />
+                      </div>
+                    ) : p.bankSnapshot.methodType === "STRIPE" ? (
+                      <div className="grid sm:grid-cols-3 gap-3">
+                        <Field label="Method" value="Stripe" />
+                        <Field label="Account holder" value={p.bankSnapshot.accountName} />
+                        <Field label="Stripe Email" value={p.bankSnapshot.stripeEmail} />
+                      </div>
+                    ) : (
+                      <div className="grid sm:grid-cols-3 gap-3">
+                        <Field label="Method" value={p.bankSnapshot.methodType ? p.bankSnapshot.methodType.replace("_", " ") : "Bank Wire"} />
+                        <Field label="Account holder" value={p.bankSnapshot.accountName} />
+                        <Field label="Bank" value={p.bankSnapshot.bankName} />
+                        <Field label="Country" value={p.bankSnapshot.country} />
+                        <Field label="Account #" value={p.bankSnapshot.accountNumber} />
+                        <Field label="Routing" value={p.bankSnapshot.routingNumber} />
+                        <Field label="IBAN" value={p.bankSnapshot.iban} />
+                        <Field label="SWIFT" value={p.bankSnapshot.swift} />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -286,7 +303,7 @@ function RejectModal({
           required
           className="w-full rounded-xl bg-zinc-200/60 dark:bg-zinc-800/60 border border-zinc-300 dark:border-zinc-700 px-3.5 py-2.5 text-sm text-zinc-900 dark:text-zinc-100"
         />
-        <p className="text-xs text-zinc-500 mt-1">Funds will be returned to the reseller's available balance.</p>
+        <p className="text-xs text-zinc-500 mt-1">Funds will be returned to the reseller&apos;s available balance.</p>
       </div>
       <div className="flex gap-2 pt-1">
         <Button variant="danger" onClick={() => onSubmit(reason)} loading={busy} disabled={!reason}>

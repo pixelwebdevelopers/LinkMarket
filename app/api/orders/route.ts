@@ -21,11 +21,22 @@ export async function GET(req: NextRequest) {
     const skip = (page - 1) * limit;
     const status = searchParams.get("status");
 
+    const roleScope = searchParams.get("roleScope");
     const where: any = {};
     if (user.role === "ADMIN") {
-      // no scope
+      if (roleScope === "customer") {
+        where.customerId = user.id;
+      } else if (roleScope === "reseller") {
+        where.fulfillerId = user.id;
+      }
     } else if (user.role === "RESELLER") {
-      where.OR = [{ fulfillerId: user.id }, { customerId: user.id }];
+      if (roleScope === "customer") {
+        where.customerId = user.id;
+      } else if (roleScope === "reseller") {
+        where.fulfillerId = user.id;
+      } else {
+        where.OR = [{ fulfillerId: user.id }, { customerId: user.id }];
+      }
     } else {
       where.customerId = user.id;
     }

@@ -59,9 +59,9 @@ export async function GET(req: NextRequest) {
     isActive: true,
     site: {
       status: "APPROVED" as const,
-      ...(niche && { niche: { contains: niche, mode: "insensitive" as const } }),
-      ...(language && { language: { equals: language, mode: "insensitive" as const } }),
-      ...(country && { country: { equals: country, mode: "insensitive" as const } }),
+      ...(niche && { niche: { contains: niche } }),
+      ...(language && { language: { equals: language } }),
+      ...(country && { country: { equals: country } }),
       metrics: {
         domainRating: { gte: minDR, lte: maxDR },
         organicTraffic: { gte: minTraffic },
@@ -122,6 +122,7 @@ export async function GET(req: NextRequest) {
 
 // Don't leak owner role / commission settings to the marketplace consumer.
 function stripOwnerPrivate<T extends { site: { owner: unknown } }>(l: T): Omit<T, "site"> & { site: Omit<T["site"], "owner"> } {
-  const { owner, ...siteRest } = l.site as any;
-  return { ...l, site: siteRest } as any;
+  const siteRest = { ...l.site };
+  delete (siteRest as { owner?: unknown }).owner;
+  return { ...l, site: siteRest } as Omit<T, "site"> & { site: Omit<T["site"], "owner"> };
 }

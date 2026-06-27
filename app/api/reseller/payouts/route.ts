@@ -64,6 +64,9 @@ export async function POST(req: NextRequest) {
     const bankSnapshot = {
       label: bank.label,
       accountName: bank.accountName,
+      methodType: bank.methodType,
+      paypalEmail: bank.paypalEmail,
+      stripeEmail: bank.stripeEmail,
       accountNumber: bank.accountNumber,
       routingNumber: bank.routingNumber,
       iban: bank.iban,
