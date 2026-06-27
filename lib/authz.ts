@@ -16,7 +16,7 @@ export async function requireUser() {
   if (!session?.user?.id) throw new AuthError("Unauthorized", 401);
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, role: true, isDisabled: true }
+    select: { id: true, email: true, name: true, role: true, isDisabled: true }
   });
   if (!user || user.isDisabled) throw new AuthError("Unauthorized", 401);
   return user;
