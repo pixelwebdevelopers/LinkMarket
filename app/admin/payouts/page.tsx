@@ -80,10 +80,11 @@ export default function AdminPayoutsPage() {
 
   return (
     <PageContainer>
-      <PageHeader
-        title="Payouts"
-        description="Approve and mark payouts as paid after sending money via your bank."
-      />
+      <div className="space-y-6">
+        <PageHeader
+          title="Payouts"
+          description="Approve and mark payouts as paid after sending money via your bank."
+        />
 
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-400 text-sm rounded-xl px-4 py-3">
@@ -209,22 +210,23 @@ export default function AdminPayoutsPage() {
           </div>
         )}
 
-      {markPaidFor && (
-        <MarkPaidModal
-          payout={markPaidFor}
-          busy={busy === markPaidFor.id}
-          onClose={() => setMarkPaidFor(null)}
-          onSubmit={(reference, notes) => act(markPaidFor.id, { action: "mark_paid", reference, notes })}
-        />
-      )}
-      {rejectFor && (
-        <RejectModal
-          payout={rejectFor}
-          busy={busy === rejectFor.id}
-          onClose={() => setRejectFor(null)}
-          onSubmit={(rejectionReason) => act(rejectFor.id, { action: "reject", rejectionReason })}
-        />
-      )}
+        {markPaidFor && (
+          <MarkPaidModal
+            payout={markPaidFor}
+            busy={busy === markPaidFor.id}
+            onClose={() => setMarkPaidFor(null)}
+            onSubmit={(reference, notes) => act(markPaidFor.id, { action: "mark_paid", reference, notes })}
+          />
+        )}
+        {rejectFor && (
+          <RejectModal
+            payout={rejectFor}
+            busy={busy === rejectFor.id}
+            onClose={() => setRejectFor(null)}
+            onSubmit={(rejectionReason) => act(rejectFor.id, { action: "reject", rejectionReason })}
+          />
+        )}
+      </div>
     </PageContainer>
   );
 }
