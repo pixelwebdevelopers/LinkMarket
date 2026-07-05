@@ -288,6 +288,7 @@ model Order {
   articleUrl  String?
   notes       String? @db.Text
   contentBody String? @db.Text
+  documentUrl String? @db.Text
 
   // stripe
   stripePaymentIntentId String?    @unique

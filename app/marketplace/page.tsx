@@ -5,7 +5,7 @@ import { ListingCard } from "@/components/marketplace/ListingCard";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Search, SlidersHorizontal, X, Globe } from "lucide-react";
+import { Search, SlidersHorizontal, X, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NICHES = ["All Niches","Technology","Finance","Health","Travel","Food","Fashion","Sports","Education","Real Estate","SaaS","E-commerce","iGaming","Crypto","Marketing","Legal","Business"];
@@ -29,7 +29,7 @@ interface Filters {
 }
 const defaultFilters: Filters = { type:"", niche:"", language:"", minDR:"", maxDR:"", minPrice:"", maxPrice:"", minTraffic:"", sortBy:"price_asc" };
 
-interface ListingItem {
+interface Listing {
   id: string;
   type: string;
   basePriceCents: number;
@@ -38,26 +38,30 @@ interface ListingItem {
   doFollow: boolean;
   includesContent: boolean;
   wordCount?: number | null;
-  site: {
-    url: string;
-    name: string;
-    niche: string;
-    language: string;
-    country: string;
-    exampleUrl?: string | null;
-    metrics?: {
-      domainRating: number;
-      domainAuthority: number;
-      organicTraffic: number;
-      referringDomains: number;
-      spamScore: number;
-    } | null;
-  };
+  extraNotes?: string | null;
+}
+
+interface SiteItem {
+  id: string;
+  url: string;
+  name: string;
+  niche: string;
+  language: string;
+  country: string;
+  exampleUrl?: string | null;
+  description?: string | null;
+  metrics?: {
+    domainRating: number;
+    domainAuthority: number;
+    organicTraffic: number;
+    referringDomains: number;
+    spamScore: number;
+  } | null;
+  listings: Listing[];
 }
 
 export default function MarketplacePage() {
-  const [listings, setListings] = useState<ListingItem[]>([]);
-  const [total, setTotal] = useState(0);
+  const [sites, setSites] = useState<SiteItem[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -65,15 +69,33 @@ export default function MarketplacePage() {
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [onlyFavorites, setOnlyFavorites] = useState(false);
 
   const [prevFilters, setPrevFilters] = useState(filters);
   const [prevPage, setPrevPage] = useState(page);
   const [prevSearch, setPrevSearch] = useState("");
+  const [prevOnlyFavorites, setPrevOnlyFavorites] = useState(onlyFavorites);
 
-  if (filters !== prevFilters || page !== prevPage || debouncedSearch !== prevSearch) {
+  function getStarredSiteIds(): string[] {
+    if (typeof window === "undefined") return [];
+    const ids: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("starred-")) {
+        const val = localStorage.getItem(key);
+        if (val === "true") {
+          ids.push(key.replace("starred-", ""));
+        }
+      }
+    }
+    return ids;
+  }
+
+  if (filters !== prevFilters || page !== prevPage || debouncedSearch !== prevSearch || onlyFavorites !== prevOnlyFavorites) {
     setPrevFilters(filters);
     setPrevPage(page);
     setPrevSearch(debouncedSearch);
+    setPrevOnlyFavorites(onlyFavorites);
     setLoading(true);
   }
 
@@ -99,11 +121,15 @@ export default function MarketplacePage() {
       if (filters.minTraffic) params.set("minTraffic", filters.minTraffic);
       if (debouncedSearch.trim()) params.set("q", debouncedSearch.trim());
       
+      if (onlyFavorites) {
+        const starred = getStarredSiteIds();
+        params.set("favorites", starred.join(","));
+      }
+      
       const res = await fetch(`/api/marketplace?${params}`);
       const data = await res.json();
       if (active) {
-        setListings(data.listings ?? []);
-        setTotal(data.total ?? 0);
+        setSites(data.listings ?? []);
         setTotalPages(data.totalPages ?? 1);
         setLoading(false);
       }
@@ -112,7 +138,7 @@ export default function MarketplacePage() {
     return () => {
       active = false;
     };
-  }, [filters, page, debouncedSearch]);
+  }, [filters, page, debouncedSearch, onlyFavorites]);
 
   function updateFilter(key: keyof Filters, value: string) {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -121,29 +147,46 @@ export default function MarketplacePage() {
   function resetFilters() {
     setFilters(defaultFilters);
     setSearchQuery("");
+    setOnlyFavorites(false);
     setPage(1);
   }
-  const hasActiveFilters = Object.entries(filters).some(([k, v]) => v !== "" && k !== "sortBy") || searchQuery !== "";
+  const hasActiveFilters = Object.entries(filters).some(([k, v]) => v !== "" && k !== "sortBy") || searchQuery !== "" || onlyFavorites;
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 transition-colors duration-200">
       {/* Header */}
       <div className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 backdrop-blur-md sticky top-0 z-10 py-5 px-4 sm:px-6 lg:px-8">
         <div className="w-full flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-              <Globe className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-              Link Marketplace
-            </h1>
-            <p className="text-zinc-500 dark:text-zinc-400 text-xs mt-1">
-              {total > 0 ? (
-                <span className="inline-flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-md font-semibold">
-                  {total.toLocaleString()} listings available
-                </span>
-              ) : (
-                "Browse curated publisher listings"
-              )}
-            </p>
+          <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
+            {/* Type selector tabs */}
+            <div className="flex gap-1.5 p-1 bg-zinc-200/50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/80 rounded-xl w-fit">
+              {TYPE_OPTIONS.map((t) => (
+                <button
+                  key={t.value}
+                  onClick={() => updateFilter("type", t.value)}
+                  className={cn(
+                    "px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-150",
+                    filters.type === t.value
+                      ? "bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-sm border border-zinc-200/40 dark:border-zinc-700/40"
+                      : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                  )}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Search bar in the center just after the tabs */}
+            <div className="relative w-full md:max-w-md md:mx-auto">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+              <input
+                type="text"
+                placeholder="Search website domain..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-4 py-2.5 w-full rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm"
+              />
+            </div>
           </div>
           
           {/* Sorting and Filter Toggle */}
@@ -155,6 +198,23 @@ export default function MarketplacePage() {
             >
               {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
+
+            {/* Favorites Only Toggle */}
+            <button
+              onClick={() => {
+                setOnlyFavorites(!onlyFavorites);
+                setPage(1);
+              }}
+              className={cn(
+                "flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold border transition-all duration-150 h-9.5",
+                onlyFavorites
+                  ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400"
+                  : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+              )}
+            >
+              <Star className={cn("h-3.5 w-3.5", onlyFavorites ? "fill-amber-500 text-amber-500" : "text-zinc-400")} />
+              <span>Favorites Only</span>
+            </button>
 
             <Button
               variant={showFilters ? "secondary" : "outline"}
@@ -185,37 +245,6 @@ export default function MarketplacePage() {
       </div>
 
       <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
-          {/* Type selector tabs */}
-          <div className="flex gap-1.5 p-1 bg-zinc-200/50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/80 rounded-xl w-fit">
-            {TYPE_OPTIONS.map((t) => (
-              <button
-                key={t.value}
-                onClick={() => updateFilter("type", t.value)}
-                className={cn(
-                  "px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-150",
-                  filters.type === t.value
-                    ? "bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-sm border border-zinc-200/40 dark:border-zinc-700/40"
-                    : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-                )}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Search bar next to tabs */}
-          <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-            <input
-              type="text"
-              placeholder="Search website domain..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2.5 w-full rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-sm"
-            />
-          </div>
-        </div>
 
         {/* Filters drawer panel */}
         {showFilters && (
@@ -276,24 +305,22 @@ export default function MarketplacePage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-zinc-50 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-800 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-                  <th className="px-4 py-3">Portal</th>
-                  <th className="px-4 py-3">Country</th>
-                  <th className="px-4 py-3">Language</th>
-                  <th className="px-4 py-3">Category</th>
-                  <th className="px-4 py-3">Also Accepting</th>
-                  <th className="px-4 py-3 text-center">DR</th>
+                  <th className="px-4 py-3">Site Name</th>
                   <th className="px-4 py-3 text-center">Traffic</th>
+                  <th className="px-4 py-3 text-center">DR</th>
                   <th className="px-4 py-3 text-center">RD</th>
                   <th className="px-4 py-3 text-center">DA</th>
                   <th className="px-4 py-3 text-center">SS</th>
-                  <th className="px-4 py-3 text-right">Price</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  <th className="px-4 py-3">Category</th>
+                  <th className="px-4 py-3">Country</th>
+                  <th className="px-4 py-3 text-right">Guest Post Price</th>
+                  <th className="px-4 py-3 text-right">Niche Edit Price</th>
                 </tr>
               </thead>
               <tbody>
                 {Array.from({ length: 8 }).map((_, i) => (
                   <tr key={i} className="border-b border-zinc-200/60 dark:border-zinc-800/60">
-                    {Array.from({ length: 12 }).map((_, j) => (
+                    {Array.from({ length: 10 }).map((_, j) => (
                       <td key={j} className="px-4 py-4.5">
                         <div className="h-4 bg-zinc-100 dark:bg-zinc-800/80 rounded animate-pulse w-full max-w-[80px]" />
                       </td>
@@ -303,7 +330,7 @@ export default function MarketplacePage() {
               </tbody>
             </table>
           </div>
-        ) : listings.length === 0 ? (
+        ) : sites.length === 0 ? (
           <div className="text-center py-24 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-zinc-900/5">
             <div className="h-16 w-16 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-4">
               <Search className="h-8 w-8 text-zinc-400 dark:text-zinc-600" />
@@ -318,23 +345,21 @@ export default function MarketplacePage() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-zinc-50 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-800 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-                    <th className="px-4 py-3">Portal</th>
-                    <th className="px-4 py-3">Country</th>
-                    <th className="px-4 py-3">Language</th>
-                    <th className="px-4 py-3">Category</th>
-                    <th className="px-4 py-3">Also Accepting</th>
-                    <th className="px-4 py-3 text-center">DR</th>
+                    <th className="px-4 py-3">Site Name</th>
                     <th className="px-4 py-3 text-center">Traffic</th>
+                    <th className="px-4 py-3 text-center">DR</th>
                     <th className="px-4 py-3 text-center">RD</th>
                     <th className="px-4 py-3 text-center">DA</th>
                     <th className="px-4 py-3 text-center">SS</th>
-                    <th className="px-4 py-3 text-right">Price</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
+                    <th className="px-4 py-3">Category</th>
+                    <th className="px-4 py-3">Country</th>
+                    <th className="px-4 py-3 text-right">Guest Post Price</th>
+                    <th className="px-4 py-3 text-right">Niche Edit Price</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {listings.map((listing) => (
-                    <ListingCard key={listing.id} listing={listing} />
+                  {sites.map((site) => (
+                    <ListingCard key={site.id} site={site} />
                   ))}
                 </tbody>
               </table>

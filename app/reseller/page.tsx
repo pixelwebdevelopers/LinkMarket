@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getDomainFromUrl } from "@/lib/utils";
-import { Globe, PlusCircle, CheckCircle, ExternalLink, ChevronDown, ChevronUp, Pencil, Trash2, X } from "lucide-react";
+import { Globe, PlusCircle, CheckCircle, ExternalLink, ChevronDown, ChevronUp, Pencil, X } from "lucide-react";
 import { PageContainer } from "@/components/panel/PageContainer";
 import { PageHeader } from "@/components/panel/PageHeader";
 import { EmptyState } from "@/components/panel/EmptyState";
@@ -433,7 +433,7 @@ function EditSiteModal({ site, onClose, onSubmit }: { site: any; onClose: () => 
             {error}
           </div>
         )}
-        <Input label="Site Name" value={form.name} onChange={(e) => update("name", e.target.value)} required />
+
         <div className="grid grid-cols-2 gap-3">
           <Input label="Language" value={form.language} onChange={(e) => update("language", e.target.value)} required />
           <Input label="Country" value={form.country} onChange={(e) => update("country", e.target.value)} required />

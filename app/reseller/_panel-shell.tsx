@@ -1,7 +1,7 @@
 "use client";
 
 import { PanelShell, type PanelNavSection } from "@/components/panel/PanelShell";
-import { Globe, PlusCircle, Wallet, Building2, ShoppingCart, Upload } from "lucide-react";
+import { Globe, PlusCircle, Wallet, Building2, ShoppingCart } from "lucide-react";
 
 const nav: PanelNavSection[] = [
   {
@@ -9,7 +9,6 @@ const nav: PanelNavSection[] = [
     items: [
       { href: "/reseller", label: "Sites", icon: Globe, exact: true },
       { href: "/reseller/new", label: "Submit site", icon: PlusCircle, exact: true },
-      { href: "/reseller/bulk", label: "Bulk import", icon: Upload, exact: true },
     ],
   },
   {

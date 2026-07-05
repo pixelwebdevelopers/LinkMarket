@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { requireRole, AuthError } from "@/lib/authz";
 import { logAudit } from "@/lib/audit";
 import { notifyAdmins } from "@/lib/notifications";
 import { parseCsvRecords } from "@/lib/csv";
+import { getDomainFromUrl } from "@/lib/utils";
 
 export const runtime = "nodejs";
 
@@ -52,15 +54,13 @@ function normalizeUrl(raw: string): string {
 
 /**
  * POST /api/reseller/sites/bulk { csv: string }
- * Bulk create/update the caller's sites, their metrics, and Guest Post /
- * Niche Edit listing prices. Existing sites are matched by URL; a site owned
- * by someone else is skipped. Each row is processed independently so a single
- * bad row doesn't abort the whole import.
+ * Bulk create/update sites, their metrics, and Guest Post /
+ * Niche Edit listing prices. Restricted to ADMIN users only.
  */
 export async function POST(req: NextRequest) {
   try {
-    const user = await requireRole("RESELLER", "ADMIN");
-    const isAdmin = user.role === "ADMIN";
+    const user = await requireRole("ADMIN");
+    const isAdmin = true;
 
     const { csv } = await req.json();
     if (!csv || typeof csv !== "string") {
@@ -98,11 +98,6 @@ export async function POST(req: NextRequest) {
 
       try {
         const existing = await db.site.findUnique({ where: { url }, select: { id: true, ownerId: true, status: true } });
-
-        if (existing && existing.ownerId !== user.id) {
-          results.push({ row: rowNum, url, action: "skipped", message: "URL belongs to another account" });
-          continue;
-        }
 
         // Build optional metric updates (only set fields actually provided).
         const metric: Record<string, number> = {};
@@ -149,19 +144,20 @@ export async function POST(req: NextRequest) {
           updated++;
           results.push({ row: rowNum, url, action: "updated" });
         } else {
-          // Creating a new site requires name + niche.
-          if (!rec.name?.trim() || !rec.niche?.trim()) {
-            results.push({ row: rowNum, url, action: "error", message: "New sites require name and niche" });
+          // Creating a new site requires niche.
+          if (!rec.niche?.trim()) {
+            results.push({ row: rowNum, url, action: "error", message: "New sites require a niche" });
             continue;
           }
-          const listingActive = isAdmin; // reseller listings activate after approval
+          const siteName = rec.name?.trim() || getDomainFromUrl(url);
+          const listingActive = isAdmin;
 
           await db.$transaction(async (tx) => {
             const site = await tx.site.create({
               data: {
                 ownerId: user.id,
                 url,
-                name: rec.name.trim(),
+                name: siteName,
                 niche: rec.niche.trim(),
                 description: rec.description?.trim() || null,
                 language: rec.language?.trim() || "English",
@@ -181,7 +177,7 @@ export async function POST(req: NextRequest) {
           if (!isAdmin) pendingCreated++;
           results.push({ row: rowNum, url, action: "created" });
         }
-      } catch (rowErr: any) {
+      } catch (rowErr) {
         console.error(`[bulk] row ${rowNum}`, rowErr);
         results.push({ row: rowNum, url, action: "error", message: "Failed to import this row" });
       }
@@ -223,7 +219,7 @@ export async function POST(req: NextRequest) {
  * supplied we leave any existing listing untouched (we never auto-delete).
  */
 async function upsertListing(
-  tx: any,
+  tx: Prisma.TransactionClient,
   siteId: string,
   type: "GUEST_POST" | "NICHE_EDIT",
   basePriceCents: number | undefined,

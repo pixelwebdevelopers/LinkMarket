@@ -6,7 +6,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
@@ -109,7 +108,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       links: [
         { href: "/reseller", label: "My Sites", icon: Globe, exact: true },
         { href: "/reseller/new", label: "Submit Site", icon: PlusCircle },
-        { href: "/reseller/bulk", label: "Bulk Import", icon: Upload },
         { href: "/orders?roleScope=reseller", label: "Orders Received", icon: ShoppingCart },
         { href: "/reseller/earnings", label: "Earnings & Wallet", icon: Wallet },
         { href: "/reseller/bank-accounts", label: "Bank Accounts", icon: Building2 },
@@ -123,6 +121,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       links: [
         { href: "/admin", label: "Admin Overview", icon: Shield, exact: true },
         { href: "/admin/sites", label: "Manage Sites", icon: Globe },
+        { href: "/admin/sites/bulk", label: "Bulk Import", icon: Upload },
         { href: "/admin/orders", label: "Manage Orders", icon: ShoppingCart },
         { href: "/admin/disputes", label: "Manage Disputes", icon: AlertTriangle },
         { href: "/admin/resellers", label: "Resellers List", icon: Users },
@@ -136,6 +135,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const isLinkActive = (item: SidebarLink) => {
     if (item.exact) return pathname === item.href;
+    if (item.href === "/admin/sites" && pathname.startsWith("/admin/sites/bulk")) return false;
     return pathname === item.href || pathname.startsWith(item.href + "&") || pathname.startsWith(item.href + "/");
   };
 
@@ -286,7 +286,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
           {/* Quick Actions (Right) */}
           <div className="flex items-center gap-3 ml-auto">
-            <ThemeToggle />
             <NotificationBell />
 
             {/* Profile Dropdown */}

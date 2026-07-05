@@ -5,7 +5,6 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -109,7 +108,6 @@ export function Navbar() {
 
           {/* Right */}
           <div className="hidden md:flex items-center gap-3 shrink-0">
-            <ThemeToggle />
              {hasActiveSession && <NotificationBell />}
             {hasActiveSession ? (
               <div className="relative">
@@ -203,7 +201,6 @@ export function Navbar() {
           {/* Mobile toggle area — hamburger hidden inside panel areas */}
           <div className="md:hidden flex items-center gap-2">
             {hasActiveSession && <NotificationBell />}
-            <ThemeToggle />
             {!inPanel && (
               <button
                 aria-label="Toggle menu"

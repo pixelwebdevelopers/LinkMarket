@@ -627,7 +627,6 @@ function MetricsModal({
   const [dr, setDr] = useState(String(m.domainRating ?? 0));
   const [da, setDa] = useState(String(m.domainAuthority ?? 0));
   const [traffic, setTraffic] = useState(String(m.organicTraffic ?? 0));
-  const [rd, setRd] = useState(String(m.referringDomains ?? 0));
   const [spam, setSpam] = useState(String(m.spamScore ?? 0));
 
   return (
@@ -636,7 +635,6 @@ function MetricsModal({
         <Input label="DR (0–100)" type="number" min={0} max={100} value={dr} onChange={(e) => setDr(e.target.value)} />
         <Input label="DA (0–100)" type="number" min={0} max={100} value={da} onChange={(e) => setDa(e.target.value)} />
         <Input label="Organic Traffic" type="number" min={0} value={traffic} onChange={(e) => setTraffic(e.target.value)} />
-        <Input label="Referring Domains" type="number" min={0} value={rd} onChange={(e) => setRd(e.target.value)} />
         <Input label="Spam Score (0–17)" type="number" min={0} max={17} step={0.1} value={spam} onChange={(e) => setSpam(e.target.value)} />
       </div>
       <div className="flex gap-2 pt-1">
@@ -646,7 +644,7 @@ function MetricsModal({
               domainRating: parseFloat(dr) || 0,
               domainAuthority: parseFloat(da) || 0,
               organicTraffic: parseInt(traffic) || 0,
-              referringDomains: parseInt(rd) || 0,
+              referringDomains: m.referringDomains ?? 0,
               spamScore: parseFloat(spam) || 0,
             })
           }
@@ -758,7 +756,6 @@ function EditSiteModal({
       {activeTab === "details" ? (
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Input label="Site name" value={form.name} onChange={(e) => update("name", e.target.value)} />
             <Input label="Site URL" type="url" value={form.url} onChange={(e) => update("url", e.target.value)} />
             <Input label="Niche" value={form.niche} onChange={(e) => update("niche", e.target.value)} />
             <Input label="Language" value={form.language} onChange={(e) => update("language", e.target.value)} />
@@ -891,7 +888,7 @@ function EditSiteModal({
       )}
 
       <div className="flex gap-2 pt-3 border-t border-zinc-200 dark:border-zinc-800 mt-4">
-        <Button onClick={() => onSubmit({ ...form, listings })} loading={busy}>
+        <Button onClick={() => onSubmit({ ...form, name: getDomainFromUrl(form.url), listings })} loading={busy}>
           Save changes
         </Button>
         <Button variant="outline" onClick={onClose}>

@@ -4,21 +4,6 @@ import type { ListingType } from "@prisma/client";
 import { getSetting } from "@/lib/settings";
 import { requireUser, AuthError } from "@/lib/authz";
 
-/**
- * Marketplace listings endpoint. Requires an authenticated account.
- *
- * Returns listings with a `finalPriceCents` computed from the per-listing
- * commission resolution (site override → reseller default → global). The
- * `minPrice`/`maxPrice` filter is applied to the *customer-facing* price
- * AFTER commission, but DB-level pagination uses the basePrice ordering.
- *
- * Caveat: the price-range filter is applied in-memory to the page slice, so
- * the displayed `total` is the DB-level count, which may be slightly higher
- * than the count of listings actually shown when a price filter is active.
- * For the marketplace this is acceptable — search engines and filter UIs
- * typically tolerate approximate totals. (To make this exact we'd need to
- * materialise finalPriceCents into a generated column.)
- */
 export async function GET(req: NextRequest) {
   // Marketplace browsing requires an account.
   try {
@@ -45,86 +30,132 @@ export async function GET(req: NextRequest) {
   const q = searchParams.get("q")?.trim();
   const country = searchParams.get("country");
   const sortBy = searchParams.get("sortBy") ?? "price_asc";
+  const favorites = searchParams.get("favorites");
+
+  if (favorites !== null && favorites.trim() === "") {
+    return NextResponse.json({
+      listings: [],
+      total: 0,
+      page,
+      totalPages: 1,
+    });
+  }
 
   const orderBy = (() => {
     switch (sortBy) {
-      case "price_asc": return { basePriceCents: "asc" as const };
-      case "price_desc": return { basePriceCents: "desc" as const };
-      case "dr_desc": return { site: { metrics: { domainRating: "desc" as const } } };
-      case "traffic_desc": return { site: { metrics: { organicTraffic: "desc" as const } } };
-      default: return { basePriceCents: "asc" as const };
+      case "price_asc":
+      case "price_desc":
+        return { createdAt: "desc" as const };
+      case "dr_desc": return { metrics: { domainRating: "desc" as const } };
+      case "traffic_desc": return { metrics: { organicTraffic: "desc" as const } };
+      default: return { createdAt: "desc" as const };
     }
   })();
 
   const where = {
-    isActive: true,
-    site: {
-      status: "APPROVED" as const,
-      ...(q && { url: { contains: q } }),
-      ...(niche && { niche: { contains: niche } }),
-      ...(language && { language: { equals: language } }),
-      ...(country && { country: { equals: country } }),
-      metrics: {
-        domainRating: { gte: minDR, lte: maxDR },
-        organicTraffic: { gte: minTraffic },
+    status: "APPROVED" as const,
+    listings: {
+      some: {
+        isActive: true,
+        ...(type && { type }),
       },
     },
-    ...(type && { type }),
+    ...(favorites && { id: { in: favorites.split(",") } }),
+    ...(q && { url: { contains: q, mode: "insensitive" as const } }),
+    ...(niche && niche !== "All Niches" && { niche: { equals: niche } }),
+    ...(language && language !== "All Languages" && { language: { equals: language } }),
+    ...(country && { country: { equals: country } }),
+    metrics: {
+      domainRating: { gte: minDR, lte: maxDR },
+      organicTraffic: { gte: minTraffic },
+    },
   };
 
   const [page1, total, globalCommission] = await Promise.all([
-    db.listing.findMany({
+    db.site.findMany({
       where,
       skip,
       take: limit,
       orderBy,
       include: {
-        site: { include: { metrics: true, owner: { select: { role: true, defaultCommissionCents: true } } } },
+        metrics: true,
+        owner: { select: { role: true, defaultCommissionCents: true } },
+        listings: {
+          where: {
+            isActive: true,
+            ...(type && { type }),
+          },
+        },
       },
     }),
-    db.listing.count({ where }),
+    db.site.count({ where }),
     getSetting("globalCommissionCents"),
   ]);
 
   const minPriceCents = Math.round(minPrice * 100);
   const maxPriceCents = Math.round(maxPrice * 100);
 
-  const augmented = page1.map((l) => {
-    const ownerIsAdmin = l.site.owner.role === "ADMIN";
+  const augmented = page1.map((site) => {
+    const ownerIsAdmin = site.owner.role === "ADMIN";
     let commissionCents: number;
     if (ownerIsAdmin) {
       commissionCents = 0;
-    } else if (l.site.commissionCentsOverride !== null && l.site.commissionCentsOverride !== undefined) {
-      commissionCents = l.site.commissionCentsOverride;
-    } else if (l.site.owner.defaultCommissionCents !== null && l.site.owner.defaultCommissionCents !== undefined) {
-      commissionCents = l.site.owner.defaultCommissionCents;
+    } else if (site.commissionCentsOverride !== null && site.commissionCentsOverride !== undefined) {
+      commissionCents = site.commissionCentsOverride;
+    } else if (site.owner.defaultCommissionCents !== null && site.owner.defaultCommissionCents !== undefined) {
+      commissionCents = site.owner.defaultCommissionCents;
     } else {
       commissionCents = globalCommission;
     }
-    const finalPriceCents = ownerIsAdmin ? l.basePriceCents : l.basePriceCents + commissionCents;
-    return { ...l, finalPriceCents, commissionCentsApplied: commissionCents };
+
+    const listings = site.listings.map((l) => {
+      const finalPriceCents = ownerIsAdmin ? l.basePriceCents : l.basePriceCents + commissionCents;
+      return {
+        ...l,
+        finalPriceCents,
+        commissionCentsApplied: commissionCents,
+      };
+    });
+
+    return {
+      ...site,
+      listings,
+    };
   });
 
-  // Apply price filter in-memory on the page slice. (See header caveat.)
-  const filtered = augmented.filter(
-    (l) => l.finalPriceCents >= minPriceCents && l.finalPriceCents <= maxPriceCents
-  );
+  // Apply price filter in-memory on the page slice.
+  const filtered = augmented.filter((site) => {
+    if (site.listings.length === 0) return false;
+    return site.listings.some(
+      (l) => l.finalPriceCents >= minPriceCents && l.finalPriceCents <= maxPriceCents
+    );
+  });
 
-  // If sorting by price, re-sort the slice by FINAL price for visual consistency.
-  if (sortBy === "price_asc") filtered.sort((a, b) => a.finalPriceCents - b.finalPriceCents);
-  if (sortBy === "price_desc") filtered.sort((a, b) => b.finalPriceCents - a.finalPriceCents);
+  // If sorting by price, sort by the minimum price of the site's available listings.
+  if (sortBy === "price_asc") {
+    filtered.sort((a, b) => {
+      const aMin = Math.min(...a.listings.map((l) => l.finalPriceCents));
+      const bMin = Math.min(...b.listings.map((l) => l.finalPriceCents));
+      return aMin - bMin;
+    });
+  } else if (sortBy === "price_desc") {
+    filtered.sort((a, b) => {
+      const aMax = Math.max(...a.listings.map((l) => l.finalPriceCents));
+      const bMax = Math.max(...b.listings.map((l) => l.finalPriceCents));
+      return bMax - aMax;
+    });
+  }
+
+  const sanitized = filtered.map((site) => {
+    const siteCopy = { ...site } as Record<string, unknown>;
+    delete siteCopy.owner;
+    return siteCopy;
+  });
 
   return NextResponse.json({
-    listings: filtered.map(stripOwnerPrivate),
+    listings: sanitized,
     total,
     page,
     totalPages: Math.max(1, Math.ceil(total / limit)),
   });
-}
-
-// Don't leak owner role / commission settings to the marketplace consumer.
-function stripOwnerPrivate<T extends { site: { owner: unknown } }>(l: T): Omit<T, "site"> & { site: Omit<T["site"], "owner"> } {
-  const siteRest = { ...l.site };
-  delete (siteRest as { owner?: unknown }).owner;
-  return { ...l, site: siteRest } as Omit<T, "site"> & { site: Omit<T["site"], "owner"> };
 }

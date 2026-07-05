@@ -57,10 +57,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 const transitions: Record<OrderStatus, { allowedNext: OrderStatus[]; roles: ("ADMIN" | "RESELLER" | "CUSTOMER" | "FULFILLER")[] }> = {
   PENDING_PAYMENT: { allowedNext: ["CANCELLED"], roles: ["CUSTOMER", "ADMIN"] },
   PAID:            { allowedNext: ["IN_PROGRESS", "CONTENT_NEEDED", "REJECTED"], roles: ["FULFILLER", "ADMIN"] },
-  IN_PROGRESS:     { allowedNext: ["SUBMITTED", "CONTENT_NEEDED"], roles: ["FULFILLER", "ADMIN"] },
-  CONTENT_NEEDED:  { allowedNext: ["IN_PROGRESS", "SUBMITTED"], roles: ["FULFILLER", "ADMIN"] },
-  SUBMITTED:       { allowedNext: ["PUBLISHED", "IN_PROGRESS"], roles: ["FULFILLER", "ADMIN"] },
-  PUBLISHED:       { allowedNext: ["COMPLETED"], roles: ["CUSTOMER", "ADMIN"] },
+  IN_PROGRESS:     { allowedNext: ["SUBMITTED", "CONTENT_NEEDED", "REJECTED"], roles: ["FULFILLER", "ADMIN"] },
+  CONTENT_NEEDED:  { allowedNext: ["IN_PROGRESS", "SUBMITTED", "REJECTED"], roles: ["FULFILLER", "ADMIN"] },
+  SUBMITTED:       { allowedNext: ["PUBLISHED", "IN_PROGRESS", "REJECTED"], roles: ["FULFILLER", "ADMIN"] },
+  PUBLISHED:       { allowedNext: ["COMPLETED", "REJECTED"], roles: ["CUSTOMER", "ADMIN", "FULFILLER"] },
   COMPLETED:       { allowedNext: [], roles: [] },
   CANCELLED:       { allowedNext: [], roles: [] },
   REJECTED:        { allowedNext: [], roles: [] },
@@ -99,18 +99,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     let postCommit: (() => Promise<void>) | null = null;
 
     if (status) {
-      const rule = transitions[order.status as OrderStatus];
-      if (!rule.allowedNext.includes(status)) {
-        return NextResponse.json(
-          { error: `Cannot move from ${order.status} to ${status}` },
-          { status: 409 }
-        );
+      if (!isAdmin) {
+        const rule = transitions[order.status as OrderStatus];
+        if (!rule.allowedNext.includes(status)) {
+          return NextResponse.json(
+            { error: `Cannot move from ${order.status} to ${status}` },
+            { status: 409 }
+          );
+        }
+        const roleOk =
+          (rule.roles.includes("FULFILLER") && isFulfiller) ||
+          (rule.roles.includes("CUSTOMER") && isCustomer);
+        if (!roleOk) return NextResponse.json({ error: "You cannot perform that transition" }, { status: 403 });
       }
-      const roleOk =
-        (rule.roles.includes("ADMIN") && isAdmin) ||
-        (rule.roles.includes("FULFILLER") && isFulfiller) ||
-        (rule.roles.includes("CUSTOMER") && isCustomer);
-      if (!roleOk) return NextResponse.json({ error: "You cannot perform that transition" }, { status: 403 });
 
       dataToUpdate.status = status;
       if (status === "IN_PROGRESS" && !order.acceptedAt) dataToUpdate.acceptedAt = new Date();
@@ -118,11 +119,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (status === "PUBLISHED") dataToUpdate.publishedAt = new Date();
       if (status === "COMPLETED") dataToUpdate.completedAt = new Date();
 
-      // ── REJECTED from PAID ─────────────────────────────────────────────
-      // The fulfiller is declining a paid order. Customer must be refunded —
-      // we issue the Stripe refund here and mark REFUNDED (overriding the REJECTED
-      // status), so funds get back to the customer instead of being stuck.
-      if (status === "REJECTED" && order.status === "PAID") {
+      // ── REJECTED / REFUNDED from any paid status ──────────────────────
+      const PAID_STATUSES: string[] = ["PAID", "IN_PROGRESS", "CONTENT_NEEDED", "SUBMITTED", "PUBLISHED", "DISPUTED"];
+      if ((status === "REJECTED" || status === "REFUNDED") && PAID_STATUSES.includes(order.status)) {
         if (isStripeConfigured() && order.stripePaymentIntentId) {
           try {
             await stripe.refunds.create({
@@ -130,10 +129,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
               reason: "requested_by_customer",
               metadata: { orderId: order.id, reason: "fulfiller_rejected" },
             });
-          } catch (err: any) {
+          } catch (err) {
             console.error("[order.reject] stripe refund failed", err);
             return NextResponse.json(
-              { error: `Stripe refund failed: ${err.message ?? "unknown"}` },
+              { error: `Stripe refund failed: ${(err as Error).message ?? "unknown"}` },
               { status: 502 }
             );
           }

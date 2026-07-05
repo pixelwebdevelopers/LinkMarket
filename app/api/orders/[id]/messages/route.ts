@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser, AuthError } from "@/lib/authz";
 import { db } from "@/lib/db";
-import { notify } from "@/lib/notifications";
+import { notify, notifyAdmins } from "@/lib/notifications";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -54,6 +54,26 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       order.fulfillerId !== user.id
     ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    if (user.role !== "ADMIN") {
+      const emailMatch = body.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+      const phoneMatch = body.match(/(?:\+?\d[\s-()]*){7,15}\d/);
+      if (emailMatch || phoneMatch) {
+        const trigger = emailMatch ? `email (${emailMatch[0]})` : `phone number`;
+        await notifyAdmins({
+          type: "GENERIC",
+          title: "Policy Violation Alert: Contact Info Shared",
+          body: `User ${user.email} (order #${id.slice(-8).toUpperCase()}) tried to share contact details: ${trigger}. Message blocked: "${body.trim()}"`,
+          link: `/admin/orders/${id}`,
+          email: true,
+        });
+
+        return NextResponse.json(
+          { error: "Sharing contact information (emails or phone numbers) is strictly prohibited on the chat. Your message has not been sent and the platform administrator has been notified." },
+          { status: 400 }
+        );
+      }
     }
 
     const message = await db.orderMessage.create({

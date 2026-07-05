@@ -61,6 +61,7 @@ export default function OrderDetailPage() {
     notes?: string | null;
     contentBody?: string | null;
     stripePaymentIntentId?: string | null;
+    documentUrl?: string | null;
     listing?: {
       id: string;
       type: string;
@@ -210,30 +211,31 @@ export default function OrderDetailPage() {
           </div>
 
           {currentStep >= 0 && (
-            <div className="mt-4">
-              <div className="flex items-center mb-2">
+            <div className="mt-8 relative mb-6">
+              {/* Connecting Line background */}
+              <div className="absolute top-1.5 left-[10%] right-[10%] h-0.5 bg-zinc-200 dark:bg-zinc-800 -translate-y-1/2 z-0" />
+              {/* Active Connecting Line */}
+              <div
+                className="absolute top-1.5 left-[10%] h-0.5 bg-indigo-500 -translate-y-1/2 z-0 transition-all duration-300"
+                style={{ width: `${(currentStep / (steps.length - 1)) * 80}%` }}
+              />
+              
+              <div className="relative flex justify-between z-10">
                 {steps.map((step, i) => (
-                  <div key={step} className="flex items-center flex-1">
+                  <div key={step} className="flex flex-col items-center w-[20%] text-center">
                     <div
-                      className={`h-2.5 w-2.5 rounded-full shrink-0 transition-colors ${
+                      className={`h-3 w-3 rounded-full transition-all duration-300 border-2 ${
                         i <= currentStep
-                          ? "bg-indigo-500 shadow-lg shadow-indigo-500/40"
-                          : "bg-zinc-300 dark:bg-zinc-700"
+                          ? "bg-indigo-600 border-indigo-600 shadow-[0_0_0_4px_rgba(79,70,229,0.15)]"
+                          : "bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700"
                       }`}
                     />
-                    {i < steps.length - 1 && (
-                      <div
-                        className={`h-0.5 flex-1 transition-colors ${
-                          i < currentStep ? "bg-indigo-500" : "bg-zinc-300 dark:bg-zinc-700"
-                        }`}
-                      />
-                    )}
+                    <span className={`text-[10px] sm:text-xs font-semibold mt-2 transition-colors ${
+                      i <= currentStep ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-400 dark:text-zinc-600"
+                    }`}>
+                      {statusLabel[step]}
+                    </span>
                   </div>
-                ))}
-              </div>
-              <div className="flex justify-between text-xs text-zinc-500 mt-1">
-                {steps.map((step) => (
-                  <span key={step}>{statusLabel[step]}</span>
                 ))}
               </div>
             </div>
@@ -264,6 +266,24 @@ export default function OrderDetailPage() {
               <div className="sm:col-span-2">
                 <p className="text-zinc-500 text-xs mb-0.5">Notes</p>
                 <p className="text-zinc-700 dark:text-zinc-300">{order.notes}</p>
+              </div>
+            )}
+            {typeof order.documentUrl === "string" && (
+              <div className="sm:col-span-2 bg-indigo-500/5 border border-indigo-500/10 rounded-xl p-3 flex items-center justify-between">
+                <div>
+                  <p className="text-zinc-500 text-xs mb-0.5">Attached Document</p>
+                  <p className="text-xs text-zinc-900 dark:text-white font-medium truncate max-w-xs sm:max-w-md">
+                    {order.documentUrl.split("/").pop()?.split("?")[0]?.replace(/^[0-9]+_/, "") || "document"}
+                  </p>
+                </div>
+                <a
+                  href={order.documentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1 shrink-0"
+                >
+                  Download Doc
+                </a>
               </div>
             )}
           </div>
@@ -307,7 +327,22 @@ export default function OrderDetailPage() {
                     Mark as Submitted
                   </Button>
                 )}
-                {(order.status === "SUBMITTED" || order.status === "IN_PROGRESS") && articleUrl && (
+                {order.status === "CONTENT_NEEDED" && (
+                  <Button size="sm" onClick={() => updateStatus("IN_PROGRESS")} loading={updating}>
+                    Resume Order
+                  </Button>
+                )}
+                {["PAID", "IN_PROGRESS"].includes(order.status) && (
+                  <Button size="sm" variant="outline" onClick={() => updateStatus("CONTENT_NEEDED")} loading={updating}>
+                    Request Content
+                  </Button>
+                )}
+                {["SUBMITTED", "PUBLISHED"].includes(order.status) && (
+                  <Button size="sm" variant="outline" onClick={() => updateStatus("IN_PROGRESS")} loading={updating}>
+                    Revise / Move to In Progress
+                  </Button>
+                )}
+                {["SUBMITTED", "IN_PROGRESS"].includes(order.status) && articleUrl && (
                   <Button
                     size="sm"
                     variant="secondary"
@@ -317,7 +352,7 @@ export default function OrderDetailPage() {
                     Mark as Published
                   </Button>
                 )}
-                {order.status === "PAID" && (
+                {["PAID", "IN_PROGRESS", "CONTENT_NEEDED", "SUBMITTED", "PUBLISHED"].includes(order.status) && (
                   <Button
                     size="sm"
                     variant="danger"

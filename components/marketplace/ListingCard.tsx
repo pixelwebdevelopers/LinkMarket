@@ -3,34 +3,39 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { formatNumber, getDomainFromUrl } from "@/lib/utils";
-import { ExternalLink, Star, FileText, Pencil, Link2, Info, ArrowUpRight } from "lucide-react";
+import { ExternalLink, Star, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+interface Listing {
+  id: string;
+  type: string;
+  basePriceCents: number;
+  finalPriceCents: number;
+  turnaroundDays: number;
+  doFollow: boolean;
+  includesContent: boolean;
+  wordCount?: number | null;
+  extraNotes?: string | null;
+}
+
 interface ListingCardProps {
-  listing: {
+  site: {
     id: string;
-    type: string;
-    basePriceCents: number;
-    finalPriceCents: number;
-    turnaroundDays: number;
-    doFollow: boolean;
-    includesContent: boolean;
-    wordCount?: number | null;
-    site: {
-      url: string;
-      name: string;
-      niche: string;
-      language: string;
-      country: string;
-      exampleUrl?: string | null;
-      metrics?: {
-        domainRating: number;
-        domainAuthority: number;
-        organicTraffic: number;
-        referringDomains: number;
-        spamScore: number;
-      } | null;
-    };
+    url: string;
+    name: string;
+    niche: string;
+    language: string;
+    country: string;
+    exampleUrl?: string | null;
+    description?: string | null;
+    metrics?: {
+      domainRating: number;
+      domainAuthority: number;
+      organicTraffic: number;
+      referringDomains: number;
+      spamScore: number;
+    } | null;
+    listings: Listing[];
   };
 }
 
@@ -80,8 +85,7 @@ const nicheColors: Record<string, string> = {
   Business: "bg-violet-500/10 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300 border-violet-500/20",
 };
 
-export function ListingCard({ listing }: ListingCardProps) {
-  const { site, type, finalPriceCents, doFollow } = listing;
+export function ListingCard({ site }: ListingCardProps) {
   const metrics = site.metrics;
   const domain = getDomainFromUrl(site.url);
   const countryInfo = getCountryDisplay(site.country);
@@ -89,30 +93,45 @@ export function ListingCard({ listing }: ListingCardProps) {
   const [isStarred, setIsStarred] = useState(false);
   useEffect(() => {
     try {
-      const starred = localStorage.getItem(`starred-${listing.id}`) === "true";
-      setIsStarred(starred);
-    } catch (e) {}
-  }, [listing.id]);
+      const starred = localStorage.getItem(`starred-${site.id}`) === "true";
+      setTimeout(() => {
+        setIsStarred(starred);
+      }, 0);
+    } catch {
+      // Ignore localStorage block
+    }
+  }, [site.id]);
 
   const toggleStar = () => {
     const next = !isStarred;
     setIsStarred(next);
     try {
-      localStorage.setItem(`starred-${listing.id}`, String(next));
-    } catch (e) {}
+      localStorage.setItem(`starred-${site.id}`, String(next));
+    } catch {
+      // Ignore localStorage block
+    }
   };
+
+  const gpListing = site.listings.find((l) => l.type === "GUEST_POST");
+  const neListing = site.listings.find((l) => l.type === "NICHE_EDIT");
 
   return (
     <tr className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 border-b border-zinc-200/60 dark:border-zinc-800/50 transition-colors text-xs text-zinc-700 dark:text-zinc-300">
-      {/* 1. Portal */}
+      {/* 1. Portal (Site Name) */}
       <td className="px-4 py-3.5 font-medium min-w-[180px]">
         <div className="flex items-center gap-2">
-          <Link
-            href={`/marketplace/${listing.id}`}
-            className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+          <button
+            onClick={toggleStar}
+            className={cn(
+              "p-1 rounded-lg transition-colors border",
+              isStarred
+                ? "border-amber-400 text-amber-500 bg-amber-500/5 hover:bg-amber-500/10"
+                : "border-zinc-200 dark:border-zinc-800 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+            )}
           >
-            {domain}
-          </Link>
+            <Star className={cn("h-3.5 w-3.5", isStarred && "fill-amber-500")} />
+          </button>
+          <span className="font-semibold text-zinc-950 dark:text-white">{domain}</span>
           <a
             href={site.url}
             target="_blank"
@@ -124,55 +143,7 @@ export function ListingCard({ listing }: ListingCardProps) {
         </div>
       </td>
 
-      {/* 2. Country */}
-      <td className="px-4 py-3.5 whitespace-nowrap">
-        <span className="mr-1.5">{countryInfo.flag}</span>
-        <span>{countryInfo.name}</span>
-      </td>
-
-      {/* 3. Language */}
-      <td className="px-4 py-3.5 whitespace-nowrap text-zinc-500 dark:text-zinc-400">
-        {site.language}
-      </td>
-
-      {/* 4. Main Category */}
-      <td className="px-4 py-3.5">
-        <span className={cn(
-          "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border uppercase tracking-wider",
-          nicheColors[site.niche] ?? "bg-zinc-100 text-zinc-800 border-zinc-200"
-        )}>
-          {site.niche}
-        </span>
-      </td>
-
-      {/* 5. Also Accepting */}
-      <td className="px-4 py-3.5">
-        <div className="flex items-center gap-2">
-          {type === "GUEST_POST" ? (
-            <span title="Accepts Guest Posts">
-              <FileText className="h-3.5 w-3.5 text-blue-600/70" />
-            </span>
-          ) : (
-            <span title="Accepts Niche Edits">
-              <Pencil className="h-3.5 w-3.5 text-emerald-600/70" />
-            </span>
-          )}
-          {doFollow && (
-            <span title="DoFollow Links">
-              <Link2 className="h-3.5 w-3.5 text-purple-600/70" />
-            </span>
-          )}
-        </div>
-      </td>
-
-      {/* 6. Ahrefs DR */}
-      <td className="px-4 py-3.5 text-center">
-        <div className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 font-bold border border-amber-500/20 flex items-center justify-center mx-auto tabular-nums">
-          {metrics?.domainRating ?? "—"}
-        </div>
-      </td>
-
-      {/* 7. Ahrefs Traffic */}
+      {/* 2. Traffic */}
       <td className="px-4 py-3.5 font-semibold text-center tabular-nums">
         {metrics ? (
           <div className="inline-flex items-center gap-1">
@@ -184,56 +155,80 @@ export function ListingCard({ listing }: ListingCardProps) {
         )}
       </td>
 
-      {/* 8. Referring Domains */}
+      {/* 3. DR */}
+      <td className="px-4 py-3.5 text-center">
+        <div className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 font-bold border border-amber-500/20 flex items-center justify-center mx-auto tabular-nums">
+          {metrics?.domainRating ?? "—"}
+        </div>
+      </td>
+
+      {/* 4. Referring Domains (RD) */}
       <td className="px-4 py-3.5 text-zinc-500 dark:text-zinc-400 text-center tabular-nums">
         {metrics ? formatNumber(metrics.referringDomains) : "—"}
       </td>
 
-      {/* 9. MOZ DA */}
+      {/* 5. MOZ DA */}
       <td className="px-4 py-3.5 text-center">
         <div className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 font-bold border border-blue-500/20 flex items-center justify-center mx-auto tabular-nums">
           {metrics?.domainAuthority ?? "—"}
         </div>
       </td>
 
-      {/* 10. MOZ SS */}
+      {/* 6. MOZ SS */}
       <td className="px-4 py-3.5 text-zinc-500 dark:text-zinc-400 text-center tabular-nums">
         {metrics ? `${metrics.spamScore}%` : "—"}
       </td>
 
-      {/* 11. Price */}
-      <td className="px-4 py-3.5 text-zinc-900 dark:text-white font-bold whitespace-nowrap text-right tabular-nums">
-        From {formatCents(finalPriceCents)}
+      {/* 7. Category */}
+      <td className="px-4 py-3.5">
+        <span className={cn(
+          "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border uppercase tracking-wider",
+          nicheColors[site.niche] ?? "bg-zinc-100 text-zinc-800 border-zinc-200"
+        )}>
+          {site.niche}
+        </span>
       </td>
 
-      {/* 12. Actions */}
-      <td className="px-4 py-3.5">
-        <div className="flex items-center gap-2 justify-end">
-          <button
-            onClick={toggleStar}
-            className={cn(
-              "p-1.5 rounded-lg border transition-colors",
-              isStarred
-                ? "border-amber-400 text-amber-500 bg-amber-500/5 hover:bg-amber-500/10"
-                : "border-zinc-300 dark:border-zinc-700 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
-            )}
-          >
-            <Star className={cn("h-3.5 w-3.5", isStarred && "fill-amber-500")} />
-          </button>
-          
-          <Link href={`/marketplace/${listing.id}`}>
-            <button className="flex items-center gap-1 border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-semibold px-2.5 py-1.5 rounded-xl transition-colors">
-              <Info className="h-3 w-3" />
-              <span>Info</span>
-            </button>
-          </Link>
+      {/* 8. Country */}
+      <td className="px-4 py-3.5 whitespace-nowrap">
+        <span className="mr-1.5">{countryInfo.flag}</span>
+        <span>{countryInfo.name}</span>
+      </td>
 
-          <Link href={`/marketplace/${listing.id}`}>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl shadow-sm transition-colors">
-              Offers
-            </button>
-          </Link>
-        </div>
+      {/* 9. Guest Post Price & Buy Button */}
+      <td className="px-4 py-3.5 text-right font-medium">
+        {gpListing ? (
+          <div className="flex flex-col items-end gap-1">
+            <span className="font-bold text-zinc-900 dark:text-white tabular-nums">
+              {formatCents(gpListing.finalPriceCents)}
+            </span>
+            <Link href={`/marketplace/${gpListing.id}`}>
+              <button className="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-sm transition-colors cursor-pointer">
+                Buy Guest Post
+              </button>
+            </Link>
+          </div>
+        ) : (
+          <span className="text-zinc-400 dark:text-zinc-600 italic">Not Offered</span>
+        )}
+      </td>
+
+      {/* 10. Niche Edit Price & Buy Button */}
+      <td className="px-4 py-3.5 text-right font-medium">
+        {neListing ? (
+          <div className="flex flex-col items-end gap-1">
+            <span className="font-bold text-zinc-900 dark:text-white tabular-nums">
+              {formatCents(neListing.finalPriceCents)}
+            </span>
+            <Link href={`/marketplace/${neListing.id}`}>
+              <button className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-sm transition-colors cursor-pointer">
+                Buy Niche Edit
+              </button>
+            </Link>
+          </div>
+        ) : (
+          <span className="text-zinc-400 dark:text-zinc-600 italic">Not Offered</span>
+        )}
       </td>
     </tr>
   );

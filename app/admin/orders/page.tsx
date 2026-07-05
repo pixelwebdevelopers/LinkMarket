@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { PageContainer } from "@/components/panel/PageContainer";
 import { PageHeader } from "@/components/panel/PageHeader";
 import { EmptyState } from "@/components/panel/EmptyState";
@@ -47,12 +46,14 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
+  const [scopeTab, setScopeTab] = useState<string>("all");
   const [q, setQ] = useState("");
 
   async function load() {
     setLoading(true);
     const params = new URLSearchParams();
     if (filter !== "all") params.set("status", filter);
+    if (scopeTab !== "all") params.set("roleScope", scopeTab);
     const url = `/api/orders${params.toString() ? "?" + params.toString() : ""}`;
     const res = await fetch(url);
     const data = await res.json();
@@ -63,7 +64,7 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter]);
+  }, [filter, scopeTab]);
 
   const filtered = q
     ? orders.filter((o) => {
@@ -84,6 +85,28 @@ export default function AdminOrdersPage() {
         title="Orders"
         description="Every order on the platform across all customers and fulfillers."
       />
+
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-4 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+        <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-950 p-1 rounded-xl">
+          {[
+            { id: "all", label: "All Orders" },
+            { id: "admin_only", label: "My Orders (Admin)" },
+            { id: "reseller_only", label: "Reseller Orders" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setScopeTab(tab.id)}
+              className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                scopeTab === tab.id
+                  ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm border border-zinc-200 dark:border-zinc-800"
+                  : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <select

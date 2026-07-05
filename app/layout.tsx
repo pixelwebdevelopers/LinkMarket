@@ -14,10 +14,9 @@ export const metadata: Metadata = {
     "Buy and sell high-quality backlinks. Guest posts and niche edits from curated sites.",
 };
 
-// Default theme: light. Only apply the `dark` class if the user has explicitly
-// chosen dark in localStorage. Run before paint to avoid flash.
+// Default theme: light. Remove any dark theme preferences to stick to white theme only.
 const noFlashScript = `
-(function(){try{var t=localStorage.getItem('theme');if(t==='dark'){document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');}}catch(e){}})();
+(function(){try{localStorage.removeItem('theme');document.documentElement.classList.remove('dark');}catch(e){}})();
 `;
 
 export default function RootLayout({
@@ -30,7 +29,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: noFlashScript }} />
       </head>
-      <body className={`${inter.className} bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 antialiased transition-colors duration-200`}>
+      <body className={`${inter.className} bg-white text-zinc-900 antialiased`}>
         <ThemeProvider>
           <SessionProvider>
             <NextTopLoader color="#4f46e5" showSpinner={false} height={3.5} />

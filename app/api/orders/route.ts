@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { Prisma, OrderStatus } from "@prisma/client";
 import { requireUser, AuthError } from "@/lib/authz";
 import { priceListing } from "@/lib/commission";
 import { notify, notifyAdmins } from "@/lib/notifications";
@@ -22,12 +23,14 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get("status");
 
     const roleScope = searchParams.get("roleScope");
-    const where: any = {};
+    const where: Prisma.OrderWhereInput = {};
     if (user.role === "ADMIN") {
       if (roleScope === "customer") {
         where.customerId = user.id;
-      } else if (roleScope === "reseller") {
+      } else if (roleScope === "admin_only" || roleScope === "reseller") {
         where.fulfillerId = user.id;
+      } else if (roleScope === "reseller_only") {
+        where.fulfillerId = { not: user.id };
       }
     } else if (user.role === "RESELLER") {
       if (roleScope === "customer") {
@@ -54,7 +57,7 @@ export async function GET(req: NextRequest) {
     });
     await reconcileOrders(pending.map((o) => o.id));
 
-    if (status) where.status = status;
+    if (status) where.status = status as OrderStatus;
 
     const [orders, total] = await Promise.all([
       db.order.findMany({
@@ -87,7 +90,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await requireUser();
-    const { listingId, targetUrl, anchorText, notes, contentBody } = await req.json();
+    const { listingId, targetUrl, anchorText, notes, contentBody, documentUrl } = await req.json();
 
     if (!listingId || !targetUrl || !anchorText) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -128,6 +131,7 @@ export async function POST(req: NextRequest) {
         targetUrl,
         notes,
         contentBody,
+        documentUrl,
       },
     });
 

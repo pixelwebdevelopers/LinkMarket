@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { getDomainFromUrl } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -72,10 +73,11 @@ export function SiteSubmissionForm({
     setLoading(true);
     setError("");
 
+    const domainName = getDomainFromUrl(site.url) || site.url;
     const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...site, listings }),
+      body: JSON.stringify({ ...site, name: domainName, listings }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -108,13 +110,7 @@ export function SiteSubmissionForm({
               onChange={(e) => updateSite("url", e.target.value)}
               required
             />
-            <Input
-              label="Site Name"
-              placeholder="My Awesome Blog"
-              value={site.name}
-              onChange={(e) => updateSite("name", e.target.value)}
-              required
-            />
+
             <Select
               label="Niche"
               options={NICHES.map((n) => ({ value: n, label: n }))}

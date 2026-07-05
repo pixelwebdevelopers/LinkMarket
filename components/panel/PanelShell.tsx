@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Menu, X, ChevronRight } from "lucide-react";
 
 export interface PanelNavItem {
   href: string;
   label: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   /** Mark as exact match — otherwise we match prefix */
   exact?: boolean;
   /** Optional badge content (e.g. unread count) */
@@ -42,6 +42,7 @@ export function PanelShell({ brand, brandSubtitle, nav, children }: PanelShellPr
   const isActive = (item: PanelNavItem) => {
     if (item.exact) return pathname === item.href;
     if (item.href === "/") return pathname === "/";
+    if (item.href === "/admin/sites" && pathname.startsWith("/admin/sites/bulk")) return false;
     return pathname === item.href || pathname.startsWith(item.href + "/");
   };
 

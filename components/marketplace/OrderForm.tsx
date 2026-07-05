@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Shield, Clock } from "lucide-react";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { storage } from "@/lib/firebase";
 
 interface OrderFormProps {
   listing: {
@@ -29,8 +31,59 @@ export function OrderForm({ listing }: OrderFormProps) {
   const [anchorText, setAnchorText] = useState("");
   const [notes, setNotes] = useState("");
   const [contentBody, setContentBody] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0];
+    if (!selected) {
+      setFile(null);
+      return;
+    }
+    if (selected.size > 10 * 1024 * 1024) {
+      setError("Document must be smaller than 10MB.");
+      setFile(null);
+      e.target.value = "";
+      return;
+    }
+    const allowed = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ];
+    if (!allowed.includes(selected.type) && !selected.name.endsWith(".doc") && !selected.name.endsWith(".docx") && !selected.name.endsWith(".pdf")) {
+      setError("Only PDF and Word documents (.pdf, .doc, .docx) are allowed.");
+      setFile(null);
+      e.target.value = "";
+      return;
+    }
+    setError("");
+    setFile(selected);
+  };
+
+  async function uploadFile(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const storageRef = ref(storage, `documents/${Date.now()}_${file.name}`);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      uploadTask.on(
+        "state_changed",
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setUploadProgress(Math.round(progress));
+        },
+        (error) => {
+          reject(error);
+        },
+        async () => {
+          const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+          resolve(downloadUrl);
+        }
+      );
+    });
+  }
 
   async function handleOrder(e: React.FormEvent) {
     e.preventDefault();
@@ -42,6 +95,12 @@ export function OrderForm({ listing }: OrderFormProps) {
     setError("");
 
     try {
+      let uploadedUrl = "";
+      if (file) {
+        setUploadProgress(1);
+        uploadedUrl = await uploadFile(file);
+      }
+
       // 1. Create the pending-payment order
       const orderRes = await fetch("/api/orders", {
         method: "POST",
@@ -52,6 +111,7 @@ export function OrderForm({ listing }: OrderFormProps) {
           anchorText,
           notes,
           contentBody: listing.includesContent ? undefined : contentBody,
+          documentUrl: uploadedUrl || undefined,
         }),
       });
       const orderData = await orderRes.json();
@@ -65,16 +125,15 @@ export function OrderForm({ listing }: OrderFormProps) {
       });
       const checkoutData = await checkoutRes.json();
       if (!checkoutRes.ok) {
-        // If checkout fails (e.g. Stripe not configured) we still land on the order page.
-        // The order remains PENDING_PAYMENT and the customer can retry.
         router.push(`/orders/${orderData.id}?error=${encodeURIComponent(checkoutData.error ?? "Checkout failed")}`);
         return;
       }
 
       // 3. Redirect to Stripe-hosted checkout
       window.location.href = checkoutData.url;
-    } catch (err: any) {
-      setError(err.message ?? String(err));
+    } catch (err) {
+      setError((err as Error).message ?? String(err));
+      setUploadProgress(0);
       setLoading(false);
     }
   }
@@ -126,6 +185,32 @@ export function OrderForm({ listing }: OrderFormProps) {
             />
           </div>
         )}
+
+        <div className="border border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl p-4 bg-zinc-200/20 dark:bg-zinc-800/10">
+          <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1 uppercase tracking-wide">
+            {listing.includesContent ? "Upload brief or details doc" : "OR Upload Article Document"}
+          </label>
+          <p className="text-[10px] text-zinc-500 mb-2">Max 10MB (.pdf, .doc, .docx)</p>
+          <input
+            type="file"
+            accept=".pdf,.doc,.docx"
+            onChange={handleFileChange}
+            className="w-full text-xs text-zinc-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+          />
+          {file && (
+            <p className="text-xs text-emerald-600 font-medium mt-2">
+              ✓ {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB) ready to upload
+            </p>
+          )}
+          {uploadProgress > 0 && (
+            <div className="mt-2 space-y-1">
+              <div className="w-full bg-zinc-200 dark:bg-zinc-800 rounded-full h-1.5">
+                <div className="bg-indigo-600 h-1.5 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
+              </div>
+              <p className="text-[10px] text-zinc-500 text-right">Uploading: {uploadProgress}%</p>
+            </div>
+          )}
+        </div>
 
         <div>
           <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1.5 uppercase tracking-wide">
