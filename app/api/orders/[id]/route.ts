@@ -7,6 +7,7 @@ import { writeOrderCompletedLedger, writeOrderRefundedLedger } from "@/lib/ledge
 import { stripe, isStripeConfigured } from "@/lib/stripe";
 import { reconcileOrderPayment } from "@/lib/payments";
 import type { OrderStatus } from "@prisma/client";
+import { sanitizeInput } from "@/lib/security";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -72,7 +73,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     const user = await requireUser();
     const { id } = await params;
-    const { status, articleUrl, contentBody, notes, anchorText, targetUrl } = await req.json();
+    const body = sanitizeInput(await req.json());
+    const { status, articleUrl, contentBody, notes, anchorText, targetUrl } = body;
 
     const order = await db.order.findUnique({ where: { id }, include: { listing: true } });
     if (!order) return NextResponse.json({ error: "Not found" }, { status: 404 });

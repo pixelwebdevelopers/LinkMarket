@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireUser, AuthError } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { notify, notifyAdmins } from "@/lib/notifications";
+import { sanitizeInput } from "@/lib/security";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -35,7 +36,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const user = await requireUser();
     const { id } = await params;
-    const { body } = await req.json();
+    const reqBody = sanitizeInput(await req.json());
+    const { body } = reqBody;
     if (typeof body !== "string" || !body.trim()) {
       return NextResponse.json({ error: "body is required" }, { status: 400 });
     }

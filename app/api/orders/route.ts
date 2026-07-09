@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { Prisma, OrderStatus } from "@prisma/client";
+import { sanitizeInput } from "@/lib/security";
 import { requireUser, AuthError } from "@/lib/authz";
 import { priceListing } from "@/lib/commission";
 import { notify, notifyAdmins } from "@/lib/notifications";
@@ -90,7 +91,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await requireUser();
-    const { listingId, targetUrl, anchorText, notes, contentBody, documentUrl } = await req.json();
+    const body = sanitizeInput(await req.json());
+    const { listingId, targetUrl, anchorText, notes, contentBody, documentUrl } = body;
 
     if (!listingId || !targetUrl || !anchorText) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });

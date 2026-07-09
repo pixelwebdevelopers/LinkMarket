@@ -3,6 +3,7 @@ import { requireUser, AuthError } from "@/lib/authz";
 import { db } from "@/lib/db";
 import { notifyAdmins, notify } from "@/lib/notifications";
 import { logAudit } from "@/lib/audit";
+import { sanitizeInput } from "@/lib/security";
 
 /**
  * Open a dispute on an order. Customer only.
@@ -12,7 +13,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const user = await requireUser();
     const { id } = await params;
-    const { reason } = await req.json();
+    const body = sanitizeInput(await req.json());
+    const { reason } = body;
     if (!reason || typeof reason !== "string" || reason.trim().length < 10) {
       return NextResponse.json({ error: "Please provide a clear reason (at least 10 characters)" }, { status: 400 });
     }

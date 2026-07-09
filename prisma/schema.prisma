@@ -100,6 +100,8 @@ model User {
   password      String?
   role          Role      @default(CUSTOMER)
   isDisabled    Boolean   @default(false)
+  loginAttempts Int       @default(0)
+
 
   // reseller-only overrides (null = use global settings)
   defaultCommissionCents Int?

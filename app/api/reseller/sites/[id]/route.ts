@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireRole, AuthError } from "@/lib/authz";
 import { logAudit } from "@/lib/audit";
+import { sanitizeInput } from "@/lib/security";
 
 /**
  * GET /api/reseller/sites/[id] — get a single site owned by current user.
@@ -34,7 +35,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     const user = await requireRole("RESELLER", "ADMIN");
     const { id } = await params;
-    const body = await req.json();
+    const body = sanitizeInput(await req.json());
 
     const site = await db.site.findFirst({
       where: { id, ownerId: user.id },

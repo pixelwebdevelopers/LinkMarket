@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
-import { emailEnabled, sendVerificationEmail } from "@/lib/verification";
+import { sendVerificationEmail } from "@/lib/verification";
 
 function appOrigin(req: NextRequest): string {
   return (
@@ -34,9 +34,8 @@ export async function POST(req: NextRequest) {
 
     const hashed = await bcrypt.hash(password, 12);
 
-    // Verification is only enforced when we can actually send the email.
-    // Without an email transport, auto-verify so signup still works.
-    const requireVerification = emailEnabled();
+    // Verification is always enabled on new account creation.
+    const requireVerification = true;
 
     const user = await db.user.create({
       data: {
@@ -44,13 +43,11 @@ export async function POST(req: NextRequest) {
         email: normalizedEmail,
         password: hashed,
         role: "CUSTOMER",
-        emailVerified: requireVerification ? null : new Date(),
+        emailVerified: null,
       },
     });
 
-    if (requireVerification) {
-      await sendVerificationEmail(user, appOrigin(req));
-    }
+    await sendVerificationEmail(user, appOrigin(req));
 
     return NextResponse.json(
       { id: user.id, email: user.email, role: user.role, verified: !requireVerification },

@@ -31,8 +31,16 @@ function LoginForm() {
     const res = await signIn("credentials", { email, password, redirect: false });
     if (res?.error) {
       setLoading(false);
-      setError("Invalid email or password — or your email isn't verified yet.");
-      setShowResend(true);
+      const err = res.error.toLowerCase();
+      if (err.includes("too_many_attempts")) {
+        setError("Too many failed attempts. We have sent a verification link to your email. Please verify your email before trying again.");
+        setShowResend(true);
+      } else if (err.includes("unverified_email")) {
+        setError("Your email address is not verified yet. Please check your inbox or click below to resend the verification link.");
+        setShowResend(true);
+      } else {
+        setError("Invalid email or password.");
+      }
     } else {
       router.push(callbackUrl);
       router.refresh();

@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
   }
 
   await db.$transaction([
-    db.user.update({ where: { id: record.userId }, data: { emailVerified: new Date() } }),
+    db.user.update({ where: { id: record.userId }, data: { emailVerified: new Date(), loginAttempts: 0 } }),
     db.emailVerificationToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
     db.emailVerificationToken.deleteMany({ where: { userId: record.userId, usedAt: null } }),
   ]);

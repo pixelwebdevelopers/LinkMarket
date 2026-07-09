@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole, AuthError } from "@/lib/authz";
 import { db } from "@/lib/db";
+import { PayoutMethodType } from "@prisma/client";
+import { sanitizeInput } from "@/lib/security";
 
 export async function GET() {
   try {
@@ -20,7 +22,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const user = await requireRole("RESELLER", "ADMIN");
-    const body = await req.json();
+    const body = sanitizeInput(await req.json());
     const {
       label,
       accountName,
@@ -70,7 +72,7 @@ export async function POST(req: NextRequest) {
           userId: user.id,
           label,
           accountName,
-          methodType: methodType as any,
+          methodType: methodType as PayoutMethodType,
           paypalEmail: methodType === "PAYPAL" ? paypalEmail : null,
           stripeEmail: methodType === "STRIPE" ? stripeEmail : null,
           accountNumber: methodType === "BANK_WIRE" ? (accountNumber ?? null) : null,

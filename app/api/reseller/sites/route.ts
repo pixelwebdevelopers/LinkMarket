@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireRole, AuthError } from "@/lib/authz";
 import { notifyAdmins, notify } from "@/lib/notifications";
 import { logAudit } from "@/lib/audit";
+import { sanitizeInput } from "@/lib/security";
 
 /**
  * GET /api/reseller/sites — list current user's sites.
@@ -32,7 +33,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const user = await requireRole("RESELLER", "ADMIN");
-    const body = await req.json();
+    const body = sanitizeInput(await req.json());
     const { url, name, description, language, country, niche, exampleUrl, listings } = body;
 
     if (!url || !name || !niche) {
@@ -43,6 +44,16 @@ export async function POST(req: NextRequest) {
     if (existing) return NextResponse.json({ error: "Site URL already registered" }, { status: 409 });
 
     const isAdmin = user.role === "ADMIN";
+
+interface ListingInput {
+  type: "GUEST_POST" | "NICHE_EDIT";
+  price: string;
+  turnaroundDays?: string;
+  doFollow?: boolean;
+  includesContent?: boolean;
+  wordCount?: string;
+  extraNotes?: string;
+}
 
     const site = await db.site.create({
       data: {
@@ -60,10 +71,10 @@ export async function POST(req: NextRequest) {
         metrics: { create: {} },
         listings: listings?.length
           ? {
-              create: listings.map((l: any) => ({
+              create: listings.map((l: ListingInput) => ({
                 type: l.type,
                 basePriceCents: Math.round(parseFloat(l.price) * 100),
-                turnaroundDays: parseInt(l.turnaroundDays ?? 3),
+                turnaroundDays: parseInt(l.turnaroundDays ?? "3"),
                 doFollow: l.doFollow ?? true,
                 includesContent: l.includesContent ?? false,
                 wordCount: l.wordCount ? parseInt(l.wordCount) : null,

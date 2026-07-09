@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendEmail, renderEmailShell, escapeHtml } from "@/lib/email";
 import { getSetting } from "@/lib/settings";
+import { sanitizeInput } from "@/lib/security";
 
 export const runtime = "nodejs";
 
@@ -12,7 +13,8 @@ export const runtime = "nodejs";
  */
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, subject, message } = await req.json();
+    const body = sanitizeInput(await req.json());
+    const { name, email, subject, message } = body;
 
     if (!name || !email || !message) {
       return NextResponse.json({ error: "Name, email and message are required" }, { status: 400 });

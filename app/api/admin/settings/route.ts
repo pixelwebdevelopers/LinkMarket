@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, AuthError } from "@/lib/authz";
 import { getAllSettings, setSetting, DEFAULT_SETTINGS, type SettingKey } from "@/lib/settings";
 import { logAudit } from "@/lib/audit";
+import { sanitizeInput } from "@/lib/security";
 
 export async function GET() {
   try {
@@ -18,7 +19,7 @@ export async function GET() {
 export async function PATCH(req: NextRequest) {
   try {
     const admin = await requireAdmin();
-    const body = await req.json();
+    const body = sanitizeInput(await req.json());
 
     const allowedKeys = Object.keys(DEFAULT_SETTINGS) as SettingKey[];
     // Use a mutable record — DEFAULT_SETTINGS uses `as const` which makes its keys
